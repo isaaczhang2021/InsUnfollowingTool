@@ -14,6 +14,7 @@ import {
   assertUnreachable,
   getCookie,
   getCurrentPageUnfollowers,
+  getMaxPage,
   getUsersForDisplay, sleep, unfollowUserUrlGenerator, urlGenerator,
 } from "./utils/utils";
 import { NotSearching } from "./components/NotSearching";
@@ -22,7 +23,18 @@ import { Searching } from "./components/Searching";
 import { Toolbar } from "./components/Toolbar";
 import { Unfollowing } from "./components/Unfollowing";
 import { Timings } from "./model/timings";
-import { loadWhitelist, saveWhitelist, loadTimings, saveTimings } from "./utils/whitelist-manager";
+import {
+  loadWhitelist,
+  saveWhitelist,
+  loadTimings,
+  saveTimings,
+  loadPageSize,
+  savePageSize,
+  clampPageSize,
+  loadMaxUnfollowsPerRun,
+  saveMaxUnfollowsPerRun,
+  clampMaxUnfollowsPerRun,
+} from "./utils/whitelist-manager";
 
 const LOCAL_PREVIEW_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 const isLocalPreview = LOCAL_PREVIEW_HOSTS.has(location.hostname);
@@ -122,10 +134,21 @@ function App() {
     };
   });
 
+  const [pageSize, setPageSize] = useState<number>(loadPageSize);
+  const [maxUnfollowsPerRun, setMaxUnfollowsPerRun] = useState<number>(loadMaxUnfollowsPerRun);
+
   // Save timings whenever they change
   useEffect(() => {
     saveTimings(timings);
   }, [timings]);
+
+  useEffect(() => {
+    savePageSize(pageSize);
+  }, [pageSize]);
+
+  useEffect(() => {
+    saveMaxUnfollowsPerRun(maxUnfollowsPerRun);
+  }, [maxUnfollowsPerRun]);
 
 
   let isActiveProcess: boolean;
@@ -282,6 +305,7 @@ function App() {
         state.filter,
       ),
       state.page,
+      pageSize,
     );
     if (e.currentTarget.checked) {
       const currentIds = new Set(state.selectedResults.map(u => u.id));
@@ -307,6 +331,65 @@ function App() {
         whitelistedResults: updatedWhitelist,
       });
     }
+  };
+
+  const onPageSizeChange = (nextPageSize: number) => {
+    const validPageSize = clampPageSize(nextPageSize);
+    setPageSize(validPageSize);
+    if (state.status !== "scanning") {
+      return;
+    }
+    // A bigger page size can leave the user on a page that no longer exists.
+    const maxPage = getMaxPage(
+      getUsersForDisplay(
+        state.results,
+        state.whitelistedResults,
+        state.currentTab,
+        state.searchTerm,
+        state.filter,
+      ),
+      validPageSize,
+    );
+    if (state.page > maxPage) {
+      setState({ ...state, page: maxPage });
+    }
+  };
+
+  const onMaxUnfollowsPerRunChange = (nextMaxUnfollows: number) => {
+    setMaxUnfollowsPerRun(clampMaxUnfollowsPerRun(nextMaxUnfollows));
+  };
+
+  const startUnfollowing = () => {
+    if (state.status !== "scanning") {
+      return;
+    }
+    if (state.selectedResults.length === 0) {
+      alert("Must select at least a single user to unfollow");
+      return;
+    }
+    // Only the first `maxUnfollowsPerRun` selected accounts are unfollowed, the rest are left alone.
+    const usersToUnfollow = state.selectedResults.slice(0, maxUnfollowsPerRun);
+    const skippedCount = state.selectedResults.length - usersToUnfollow.length;
+    const confirmMessage = skippedCount > 0
+      ? `Unfollow ${usersToUnfollow.length} of the ${state.selectedResults.length} selected accounts?\n`
+        + `The remaining ${skippedCount} are skipped because of the "max unfollow this run" limit.\n`
+        + "Whitelisted accounts are never unfollowed."
+      : `Unfollow ${usersToUnfollow.length} selected accounts?\nWhitelisted accounts are never unfollowed.`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    const newState: State = {
+      ...state,
+      status: "unfollowing",
+      percentage: 0,
+      selectedResults: usersToUnfollow,
+      unfollowLog: [],
+      filter: {
+        showSucceeded: true,
+        showFailed: true,
+      },
+    };
+    setState(newState);
   };
 
   useEffect(() => {
@@ -508,6 +591,11 @@ function App() {
         scanningPaused={scanningPaused}
         UserCheckIcon={UserCheckIcon}
         UserUncheckIcon={UserUncheckIcon}
+        pageSize={pageSize}
+        onPageSizeChange={onPageSizeChange}
+        maxUnfollowsPerRun={maxUnfollowsPerRun}
+        onMaxUnfollowsPerRunChange={onMaxUnfollowsPerRunChange}
+        startUnfollowing={startUnfollowing}
       ></Searching>;
       break;
     }
@@ -536,6 +624,10 @@ function App() {
           currentTimings={timings}
           whitelistedUsers={state.status === "scanning" ? state.whitelistedResults : loadWhitelist()}
           onWhitelistUpdate={onWhitelistUpdate}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+          maxUnfollowsPerRun={maxUnfollowsPerRun}
+          onMaxUnfollowsPerRunChange={onMaxUnfollowsPerRunChange}
         ></Toolbar>
 
         {markup}

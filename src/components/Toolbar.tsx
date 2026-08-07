@@ -17,6 +17,10 @@ interface ToolBarProps {
   setTimings: (timings: Timings) => void;
   whitelistedUsers: readonly UserNode[];
   onWhitelistUpdate: (users: readonly UserNode[]) => void;
+  pageSize: number;
+  onPageSizeChange: (pageSize: number) => void;
+  maxUnfollowsPerRun: number;
+  onMaxUnfollowsPerRunChange: (maxUnfollows: number) => void;
 }
 
 export const Toolbar = ({
@@ -29,6 +33,10 @@ export const Toolbar = ({
   setTimings,
   whitelistedUsers,
   onWhitelistUpdate,
+  pageSize,
+  onPageSizeChange,
+  maxUnfollowsPerRun,
+  onMaxUnfollowsPerRunChange,
 }: ToolBarProps) => {
 
   const [setingMenu, setSettingMenu] = useState(false);
@@ -165,7 +173,7 @@ export const Toolbar = ({
                 checked={
                   (() => {
                     const displayed = getUsersForDisplay(state.results, state.whitelistedResults, state.currentTab, state.searchTerm, state.filter);
-                    const pageUsers = getCurrentPageUnfollowers(displayed, state.page);
+                    const pageUsers = getCurrentPageUnfollowers(displayed, state.page, pageSize);
                     return pageUsers.length > 0 && pageUsers.every(u => state.selectedResults.some(s => s.id === u.id));
                   })()
                 }
@@ -209,6 +217,10 @@ export const Toolbar = ({
           setTimings={setTimings}
           whitelistedUsers={whitelistedUsers}
           onWhitelistUpdate={onWhitelistUpdate}
+          pageSize={pageSize}
+          onPageSizeChange={onPageSizeChange}
+          maxUnfollowsPerRun={maxUnfollowsPerRun}
+          onMaxUnfollowsPerRunChange={onMaxUnfollowsPerRunChange}
         ></SettingMenu>
       }
 
