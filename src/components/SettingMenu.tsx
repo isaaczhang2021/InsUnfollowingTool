@@ -2,6 +2,12 @@ import React, { useState } from "react";
 import { Timings } from "../model/timings";
 import { UserNode } from "../model/user";
 import { WhitelistManager } from "./WhitelistManager";
+import {
+  MIN_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+  MIN_UNFOLLOWS_PER_RUN,
+  MAX_UNFOLLOWS_PER_RUN,
+} from "../constants/constants";
 
 interface SettingMenuProps {
   setSettingState: (state: boolean) => void;
@@ -9,6 +15,10 @@ interface SettingMenuProps {
   setTimings: (timings: Timings) => void;
   whitelistedUsers: readonly UserNode[];
   onWhitelistUpdate: (users: readonly UserNode[]) => void;
+  pageSize: number;
+  onPageSizeChange: (pageSize: number) => void;
+  maxUnfollowsPerRun: number;
+  onMaxUnfollowsPerRunChange: (maxUnfollows: number) => void;
 }
 
 export const SettingMenu = ({
@@ -17,11 +27,17 @@ export const SettingMenu = ({
   setTimings,
   whitelistedUsers,
   onWhitelistUpdate,
+  pageSize,
+  onPageSizeChange,
+  maxUnfollowsPerRun,
+  onMaxUnfollowsPerRunChange,
 }: SettingMenuProps) => {
   const [timeBetweenSearchCycles, setTimeBetweenSearchCycles] = useState(currentTimings.timeBetweenSearchCycles);
   const [timeToWaitAfterFiveSearchCycles, setTimeToWaitAfterFiveSearchCycles] = useState(currentTimings.timeToWaitAfterFiveSearchCycles);
   const [timeBetweenUnfollows, setTimeBetweenUnfollows] = useState(currentTimings.timeBetweenUnfollows);
   const [timeToWaitAfterFiveUnfollows, setTimeToWaitAfterFiveUnfollows] = useState(currentTimings.timeToWaitAfterFiveUnfollows);
+  const [accountsPerPage, setAccountsPerPage] = useState(pageSize);
+  const [maxUnfollows, setMaxUnfollows] = useState(maxUnfollowsPerRun);
 
   const handleSave = (event: any) => {
     event.preventDefault();
@@ -31,6 +47,8 @@ export const SettingMenu = ({
       timeBetweenUnfollows,
       timeToWaitAfterFiveUnfollows,
     });
+    onPageSizeChange(accountsPerPage);
+    onMaxUnfollowsPerRunChange(maxUnfollows);
     setSettingState(false);
   };
 
@@ -106,6 +124,34 @@ export const SettingMenu = ({
                   onChange={(e) => handleInputChange(e, setTimeToWaitAfterFiveUnfollows)}
                 />
                 <label className="margin-between-input-and-label">(ms)</label>
+              </div>
+
+              <div className="row">
+                <label className="minimun-width" htmlFor="accountsPerPage">Accounts per page</label>
+                <input
+                  type="number"
+                  id="accountsPerPage"
+                  name="accountsPerPage"
+                  min={MIN_PAGE_SIZE}
+                  max={MAX_PAGE_SIZE}
+                  value={accountsPerPage}
+                  onChange={(e) => handleInputChange(e, setAccountsPerPage)}
+                />
+                <label className="margin-between-input-and-label">(accounts)</label>
+              </div>
+
+              <div className="row">
+                <label className="minimun-width" htmlFor="maxUnfollowsPerRun">Max unfollow this run</label>
+                <input
+                  type="number"
+                  id="maxUnfollowsPerRun"
+                  name="maxUnfollowsPerRun"
+                  min={MIN_UNFOLLOWS_PER_RUN}
+                  max={MAX_UNFOLLOWS_PER_RUN}
+                  value={maxUnfollows}
+                  onChange={(e) => handleInputChange(e, setMaxUnfollows)}
+                />
+                <label className="margin-between-input-and-label">(accounts)</label>
               </div>
 
               <div className="warning-container">

@@ -1,6 +1,17 @@
 import { UserNode } from "../model/user";
 import { Timings } from "../model/timings";
-import { WHITELISTED_RESULTS_STORAGE_KEY, TIMINGS_STORAGE_KEY } from "../constants/constants";
+import {
+  WHITELISTED_RESULTS_STORAGE_KEY,
+  TIMINGS_STORAGE_KEY,
+  PAGE_SIZE_STORAGE_KEY,
+  MAX_UNFOLLOWS_PER_RUN_STORAGE_KEY,
+  UNFOLLOWERS_PER_PAGE,
+  MIN_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+  DEFAULT_MAX_UNFOLLOWS_PER_RUN,
+  MIN_UNFOLLOWS_PER_RUN,
+  MAX_UNFOLLOWS_PER_RUN,
+} from "../constants/constants";
 
 /**
  * Export whitelist to a JSON file
@@ -52,6 +63,7 @@ export const importWhitelist = (
         user.username && 
         typeof user.id === "string" && 
         typeof user.username === "string"
+        && (user.id.startsWith("manual:") || /^\d+$/.test(user.id))
       );
       
       if (!isValid) {
@@ -106,7 +118,13 @@ export const mergeWhitelists = (
   imported: readonly UserNode[]
 ): readonly UserNode[] => {
   const existingIds = new Set(existing.map(user => user.id));
-  const uniqueImported = imported.filter(user => !existingIds.has(user.id));
+  const existingUsernames = new Set(
+    existing.map(user => user.username.toLowerCase())
+  );
+  const uniqueImported = imported.filter(user =>
+    !existingIds.has(user.id)
+    && !existingUsernames.has(user.username.toLowerCase())
+  );
   return [...existing, ...uniqueImported];
 };
 
@@ -141,4 +159,50 @@ export const loadTimings = (): Timings | null => {
  */
 export const saveTimings = (timings: Timings): void => {
   localStorage.setItem(TIMINGS_STORAGE_KEY, JSON.stringify(timings));
+};
+
+const clampWholeNumber = (value: number, min: number, max: number, fallback: number): number => {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.min(Math.max(Math.round(value), min), max);
+};
+
+const loadClampedNumber = (key: string, min: number, max: number, fallback: number): number => {
+  const stored = localStorage.getItem(key);
+  if (stored === null) {
+    return fallback;
+  }
+  return clampWholeNumber(Number(stored), min, max, fallback);
+};
+
+/**
+ * Keep a page size within the range the pagination can actually render.
+ */
+export const clampPageSize = (pageSize: number): number =>
+  clampWholeNumber(pageSize, MIN_PAGE_SIZE, MAX_PAGE_SIZE, UNFOLLOWERS_PER_PAGE);
+
+export const loadPageSize = (): number =>
+  loadClampedNumber(PAGE_SIZE_STORAGE_KEY, MIN_PAGE_SIZE, MAX_PAGE_SIZE, UNFOLLOWERS_PER_PAGE);
+
+export const savePageSize = (pageSize: number): void => {
+  localStorage.setItem(PAGE_SIZE_STORAGE_KEY, String(clampPageSize(pageSize)));
+};
+
+/**
+ * Keep the per run unfollow cap inside the range that is safe to send to Instagram.
+ */
+export const clampMaxUnfollowsPerRun = (maxUnfollows: number): number =>
+  clampWholeNumber(maxUnfollows, MIN_UNFOLLOWS_PER_RUN, MAX_UNFOLLOWS_PER_RUN, DEFAULT_MAX_UNFOLLOWS_PER_RUN);
+
+export const loadMaxUnfollowsPerRun = (): number =>
+  loadClampedNumber(
+    MAX_UNFOLLOWS_PER_RUN_STORAGE_KEY,
+    MIN_UNFOLLOWS_PER_RUN,
+    MAX_UNFOLLOWS_PER_RUN,
+    DEFAULT_MAX_UNFOLLOWS_PER_RUN,
+  );
+
+export const saveMaxUnfollowsPerRun = (maxUnfollows: number): void => {
+  localStorage.setItem(MAX_UNFOLLOWS_PER_RUN_STORAGE_KEY, String(clampMaxUnfollowsPerRun(maxUnfollows)));
 };

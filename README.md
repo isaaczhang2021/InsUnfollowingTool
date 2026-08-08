@@ -44,11 +44,34 @@ This version utilizes the Instagram API for better performance.
 
     <img src="./assets/settings_whitelist.png" alt="Settings screen" />
 
-10. ✅ Select users to unfollow using the checkboxes
+10. 📄 Choose how many accounts each page shows with the "Per page" dropdown in the sidebar
+    (20 / 30 / 50 / 100 / 120, or any value between 10 and 200 from Settings)
 
-11. ⚙️ Customize script timings via the "Settings" button:
+11. ✅ Select users to unfollow using the checkboxes
+
+12. 🛑 Set "Max unfollow this run" to cap how many accounts a single run touches (default 20, up to 100).
+    If you select more than the cap, only the first accounts of the selection are unfollowed and the
+    rest are left untouched. Whitelisted accounts are never unfollowed.
+
+13. ⚙️ Customize script timings via the "Settings" button:
 
     <img src="./assets/settings.png" alt="Settings screen" />
+
+## 🔁 Reviewing offline before unfollowing
+
+If you review your following list somewhere else (for example the `Following Seg` Streamlit app in this
+repo) and export the accounts you want to keep, you can feed that decision straight into the tool:
+
+1. Export your keep-list as a JSON file of users (`whitelist_users.json`)
+2. In the tool, open **Settings → Whitelist → Import** and pick that file
+3. Everything you imported moves to the **Whitelisted** tab and disappears from **Non-Whitelisted**
+4. Set "Per page" and "Max unfollow this run" to a batch size you are comfortable with
+5. On the **Non-Whitelisted** tab, filter, then either tick accounts manually or press
+   **Select first N** to take the first N accounts of the current filter
+6. Press **Unfollow** and repeat with a fresh run when you want to continue
+
+Page size and the per run cap are remembered in `localStorage`, so they survive pasting the script again
+in the same browser.
 
 ## 📱 Mobile Usage
 
@@ -70,6 +93,8 @@ For Android users who want to use it on mobile:
 - 🔍 Scan and identify users who don't follow you back
 - 🤍 Whitelist system to protect specific accounts from unfollowing
 - 💾 Export/Import whitelist functionality for backup and transfer
+- 📄 Configurable page size so you can review 20 or 200 accounts at a time
+- 🛑 Per run unfollow cap, so a large selection is processed in safe batches
 - ⚙️ Customizable timing settings to avoid rate limits
 - 🎨 Clean, minimalist interface inspired by Apple design
 - 📱 Fully responsive - works on desktop and mobile

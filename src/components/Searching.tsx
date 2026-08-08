@@ -1,8 +1,20 @@
-import React from "react";
-import { assertUnreachable, getCurrentPageUnfollowers, getMaxPage, getUsersForDisplay, isWithoutProfilePicture } from "../utils/utils";
+import React, { useEffect, useState } from "react";
+import {
+  assertUnreachable,
+  getCurrentPageUnfollowers,
+  getMaxPage,
+  getUsersForDisplay,
+  isWithoutProfilePicture,
+  sortUsersByUsername,
+} from "../utils/utils";
 import { State } from "../model/state";
 import { UserNode } from "../model/user";
-import { WHITELISTED_RESULTS_STORAGE_KEY } from "../constants/constants";
+import {
+  WHITELISTED_RESULTS_STORAGE_KEY,
+  PAGE_SIZE_CHOICES,
+  MIN_UNFOLLOWS_PER_RUN,
+  MAX_UNFOLLOWS_PER_RUN,
+} from "../constants/constants";
 
 
 export interface SearchingProps {
@@ -14,6 +26,11 @@ export interface SearchingProps {
   toggleUser: (checked: boolean, user: UserNode) => void;
   UserCheckIcon: React.FC;
   UserUncheckIcon: React.FC;
+  pageSize: number;
+  onPageSizeChange: (pageSize: number) => void;
+  maxUnfollowsPerRun: number;
+  onMaxUnfollowsPerRunChange: (maxUnfollows: number) => void;
+  startUnfollowing: () => void;
 }
 
 export const Searching = ({
@@ -25,7 +42,19 @@ export const Searching = ({
   toggleUser,
   UserCheckIcon,
   UserUncheckIcon,
+  pageSize,
+  onPageSizeChange,
+  maxUnfollowsPerRun,
+  onMaxUnfollowsPerRunChange,
+  startUnfollowing,
 }: SearchingProps) => {
+  // Kept as a draft so clearing the field while typing does not immediately snap back to the minimum.
+  const [maxUnfollowsDraft, setMaxUnfollowsDraft] = useState(String(maxUnfollowsPerRun));
+
+  useEffect(() => {
+    setMaxUnfollowsDraft(String(maxUnfollowsPerRun));
+  }, [maxUnfollowsPerRun]);
+
   if (state.status !== "scanning") {
     return null;
   }
@@ -37,6 +66,12 @@ export const Searching = ({
     state.searchTerm,
     state.filter,
   );
+  // A page size typed in the settings menu is not necessarily one of the shortcuts.
+  const pageSizeOptions = PAGE_SIZE_CHOICES.includes(pageSize)
+    ? PAGE_SIZE_CHOICES
+    : [...PAGE_SIZE_CHOICES, pageSize].sort((a, b) => a - b);
+  const unfollowCount = Math.min(state.selectedResults.length, maxUnfollowsPerRun);
+  const isCapped = state.selectedResults.length > maxUnfollowsPerRun;
   let currentLetter = "";
 
   const onNewLetter = (firstLetter: string) => {
@@ -191,11 +226,11 @@ export const Searching = ({
                   ❮
                 </a>
                 <span>
-                  {state.page}/{getMaxPage(usersForDisplay)}
+                  {state.page}/{getMaxPage(usersForDisplay, pageSize)}
                 </span>
                 <a
                   onClick={() => {
-                    if (state.page < getMaxPage(usersForDisplay)) {
+                    if (state.page < getMaxPage(usersForDisplay, pageSize)) {
                       setState({
                         ...state,
                         page: state.page + 1,
@@ -208,38 +243,62 @@ export const Searching = ({
               </div>
             </div>
           </div>
+          <div className="sidebar-page-size">
+            <label htmlFor="page-size-select">Per page</label>
+            <select
+              id="page-size-select"
+              title="How many accounts to show on each page"
+              value={pageSize}
+              onChange={e => onPageSizeChange(Number(e.currentTarget.value))}
+            >
+              {pageSizeOptions.map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="unfollow-cap">
+          <label htmlFor="max-unfollows-input">Max unfollow this run</label>
+          <input
+            id="max-unfollows-input"
+            type="number"
+            min={MIN_UNFOLLOWS_PER_RUN}
+            max={MAX_UNFOLLOWS_PER_RUN}
+            value={maxUnfollowsDraft}
+            onChange={e => setMaxUnfollowsDraft(e.currentTarget.value)}
+            onBlur={e => {
+              const rawValue = e.currentTarget.value.trim();
+              if (rawValue !== "") {
+                onMaxUnfollowsPerRunChange(Number(rawValue));
+              }
+              setMaxUnfollowsDraft(String(maxUnfollowsPerRun));
+            }}
+          />
+          <button
+            type="button"
+            className="button-secondary"
+            title="Replace the current selection with the first accounts of this filter"
+            disabled={state.currentTab !== "non_whitelisted" || usersForDisplay.length === 0}
+            onClick={() => {
+              setState({
+                ...state,
+                selectedResults: sortUsersByUsername(usersForDisplay).slice(0, maxUnfollowsPerRun),
+              });
+            }}
+          >
+            Select first {maxUnfollowsPerRun}
+          </button>
+          {isCapped && (
+            <span className="unfollow-cap-hint">
+              {state.selectedResults.length} selected, only {unfollowCount} will be unfollowed this run.
+            </span>
+          )}
         </div>
         <button
           className="unfollow"
-          onClick={() => {
-            if (!confirm("Are you sure?")) {
-              return;
-            }
-            //TODO TEMP until types are properly fixed
-            // @ts-ignore
-            setState(prevState => {
-              if (prevState.status !== "scanning") {
-                return prevState;
-              }
-              if (prevState.selectedResults.length === 0) {
-                alert("Must select at least a single user to unfollow");
-                return prevState;
-              }
-              const newState: State = {
-                ...prevState,
-                status: "unfollowing",
-                percentage: 0,
-                unfollowLog: [],
-                filter: {
-                  showSucceeded: true,
-                  showFailed: true,
-                },
-              };
-              return newState;
-            });
-          }}
+          onClick={startUnfollowing}
         >
-          Unfollow ({state.selectedResults.length})
+          Unfollow ({unfollowCount})
         </button>
       </aside>
       <article className="results-container">
@@ -277,7 +336,7 @@ export const Searching = ({
             Whitelisted
           </button>
         </nav>
-        {getCurrentPageUnfollowers(usersForDisplay, state.page).map(user => {
+        {getCurrentPageUnfollowers(usersForDisplay, state.page, pageSize).map(user => {
           const firstLetter = user.username.substring(0, 1).toUpperCase();
           return (
             <>

@@ -1,5 +1,5 @@
 import { UserNode } from "../model/user";
-import { UNFOLLOWERS_PER_PAGE, WITHOUT_PROFILE_PICTURE_URL_IDS } from "../constants/constants";
+import { WITHOUT_PROFILE_PICTURE_URL_IDS } from "../constants/constants";
 import { ScanningTab } from "../model/scanning-tab";
 import { ScanningFilter } from "../model/scanning-filter";
 import { UnfollowLogEntry } from "../model/unfollow-log-entry";
@@ -51,14 +51,22 @@ export function exportToCSV(users: readonly UserNode[]) {
   link.remove();
 }
 
-export function getMaxPage(nonFollowersList: readonly UserNode[]): number {
-  const pageCalc = Math.ceil(nonFollowersList.length / UNFOLLOWERS_PER_PAGE);
+export function sortUsersByUsername(users: readonly UserNode[]): readonly UserNode[] {
+  return [...users].sort((a, b) => (a.username > b.username ? 1 : -1));
+}
+
+export function getMaxPage(nonFollowersList: readonly UserNode[], pageSize: number): number {
+  const pageCalc = Math.ceil(nonFollowersList.length / pageSize);
   return pageCalc < 1 ? 1 : pageCalc;
 }
 
-export function getCurrentPageUnfollowers(nonFollowersList: readonly UserNode[], currentPage: number): readonly UserNode[] {
-  const sortedList = [...nonFollowersList].sort((a, b) => (a.username > b.username ? 1 : -1));
-  return sortedList.splice(UNFOLLOWERS_PER_PAGE * (currentPage - 1), UNFOLLOWERS_PER_PAGE);
+export function getCurrentPageUnfollowers(
+  nonFollowersList: readonly UserNode[],
+  currentPage: number,
+  pageSize: number,
+): readonly UserNode[] {
+  const sortedList = [...sortUsersByUsername(nonFollowersList)];
+  return sortedList.splice(pageSize * (currentPage - 1), pageSize);
 }
 
 export function isWithoutProfilePicture(user: UserNode): boolean {
@@ -74,7 +82,10 @@ export function getUsersForDisplay(
 ): readonly UserNode[] {
   const users: UserNode[] = [];
   for (const result of results) {
-    const isWhitelisted = whitelistedResults.find(user => user.id === result.id) !== undefined;
+    const isWhitelisted = whitelistedResults.some(
+      user => user.id === result.id
+        || user.username.toLowerCase() === result.username.toLowerCase()
+    );
     switch (currentTab) {
       case "non_whitelisted":
         if (isWhitelisted) {

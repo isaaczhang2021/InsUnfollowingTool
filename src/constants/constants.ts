@@ -2,6 +2,19 @@ export const INSTAGRAM_HOSTNAME = "www.instagram.com";
 export const UNFOLLOWERS_PER_PAGE = 50;
 export const WHITELISTED_RESULTS_STORAGE_KEY = "iu_whitelisted-results";
 export const TIMINGS_STORAGE_KEY = "iu_timings";
+export const PAGE_SIZE_STORAGE_KEY = "iu_page-size";
+export const MAX_UNFOLLOWS_PER_RUN_STORAGE_KEY = "iu_max-unfollows-per-run";
+
+// PAGINATION CONSTANTS
+export const PAGE_SIZE_CHOICES = [20, 30, 50, 100, 120];
+export const MIN_PAGE_SIZE = 10;
+export const MAX_PAGE_SIZE = 200;
+
+// UNFOLLOW BATCH CONSTANTS
+// Every run is capped because unfollowing hundreds of accounts at once gets the account rate limited.
+export const DEFAULT_MAX_UNFOLLOWS_PER_RUN = 20;
+export const MIN_UNFOLLOWS_PER_RUN = 1;
+export const MAX_UNFOLLOWS_PER_RUN = 100;
 
 //TIMINGS CONSTANTS
 export const DEFAULT_TIME_BETWEEN_SEARCH_CYCLES = 1000;
