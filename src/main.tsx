@@ -9,7 +9,9 @@ import { UserUncheckIcon } from "./components/icons/UserUncheckIcon";
 import { DEFAULT_TIME_BETWEEN_SEARCH_CYCLES,
   DEFAULT_TIME_BETWEEN_UNFOLLOWS,
   DEFAULT_TIME_TO_WAIT_AFTER_FIVE_SEARCH_CYCLES,
-  DEFAULT_TIME_TO_WAIT_AFTER_FIVE_UNFOLLOWS, INSTAGRAM_HOSTNAME } from "./constants/constants";
+  DEFAULT_TIME_TO_WAIT_AFTER_FIVE_UNFOLLOWS,
+  AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS,
+  INSTAGRAM_HOSTNAME } from "./constants/constants";
 import {
   assertUnreachable,
   getCookie,
@@ -17,6 +19,14 @@ import {
   getMaxPage,
   getUsersForDisplay, sleep, unfollowUserUrlGenerator, urlGenerator,
 } from "./utils/utils";
+import {
+  createInitialPace,
+  onPaceSuccess,
+  onPaceFailure,
+  nextBetweenSleepMs,
+  shouldTakeAfterFiveBreak,
+} from "./utils/pace-manager";
+import { Pace } from "./model/pace";
 import { NotSearching } from "./components/NotSearching";
 import { State } from "./model/state";
 import { Searching } from "./components/Searching";
@@ -89,6 +99,7 @@ const _getPreviewUsers = (): readonly UserNode[] => [
 
 // pause
 let scanningPaused = false;
+let unfollowingPaused = false;
 
 function pauseScan() {
   scanningPaused = !scanningPaused;
@@ -378,6 +389,7 @@ function App() {
     if (!confirm(confirmMessage)) {
       return;
     }
+    unfollowingPaused = false;
     const newState: State = {
       ...state,
       status: "unfollowing",
@@ -388,8 +400,88 @@ function App() {
         showSucceeded: true,
         showFailed: true,
       },
+      mode: "manual",
+      paused: false,
+      queueTotal: usersToUnfollow.length,
+      pace: createInitialPace(),
     };
     setState(newState);
+  };
+
+  const startAutoQueueUnfollowing = () => {
+    if (state.status !== "scanning") {
+      return;
+    }
+    if (state.percentage < 100) {
+      alert("Wait until scanning reaches 100% before starting the auto queue.");
+      return;
+    }
+    const queue = getUsersForDisplay(
+      state.results,
+      state.whitelistedResults,
+      "non_whitelisted",
+      state.searchTerm,
+      state.filter,
+    );
+    if (queue.length === 0) {
+      alert("No non-whitelisted accounts match the current filters.");
+      return;
+    }
+    const confirmMessage =
+      `Unfollow all ${queue.length} matching non-whitelisted accounts?\n\n`
+      + "This uses the current sidebar filters (e.g. Non-Followers only if that is checked).\n"
+      + "Whitelisted accounts are never unfollowed.\n"
+      + "Pace starts at ~4s between unfollows and 1 min after every 5, then speeds up gradually.\n"
+      + "Keep this tab open and do not let the computer sleep.\n"
+      + "After 3 consecutive failures the queue pauses automatically.";
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    unfollowingPaused = false;
+    const newState: State = {
+      ...state,
+      status: "unfollowing",
+      percentage: 0,
+      selectedResults: queue,
+      unfollowLog: [],
+      filter: {
+        showSucceeded: true,
+        showFailed: true,
+      },
+      mode: "auto_queue",
+      paused: false,
+      queueTotal: queue.length,
+      pace: createInitialPace(),
+    };
+    setState(newState);
+  };
+
+  const setUnfollowingPaused = (paused: boolean) => {
+    unfollowingPaused = paused;
+    setState(prevState => {
+      if (prevState.status !== "unfollowing") {
+        return prevState;
+      }
+      // Resuming clears the fail streak so one leftover failure does not instantly re-pause.
+      if (!paused && prevState.mode === "auto_queue") {
+        return {
+          ...prevState,
+          paused: false,
+          pace: {
+            ...prevState.pace,
+            consecutiveFail: 0,
+          },
+        };
+      }
+      return { ...prevState, paused };
+    });
+  };
+
+  const toggleUnfollowingPaused = () => {
+    if (state.status !== "unfollowing") {
+      return;
+    }
+    setUnfollowingPaused(!state.paused);
   };
 
   useEffect(() => {
@@ -506,14 +598,28 @@ function App() {
         throw new Error("csrftoken cookie is null");
       }
 
+      const isAutoQueue = state.mode === "auto_queue";
+      let pace: Pace = state.pace;
       let counter = 0;
-      for (const user of state.selectedResults) {
+      const queue = state.selectedResults;
+
+      for (const user of queue) {
+        let wasPaused = false;
+        while (unfollowingPaused) {
+          wasPaused = true;
+          await sleep(1000);
+        }
+        // Align with Resume clearing the fail streak in React state.
+        if (isAutoQueue && wasPaused) {
+          pace = { ...pace, consecutiveFail: 0 };
+        }
+
         counter += 1;
-        // Fix: Changed from Math.floor to Math.round to ensure progress reaches 100%
-        // Math.floor would leave progress at 99% when near completion
-        const percentage = Math.round((counter / state.selectedResults.length) * 100);
+        const percentage = Math.round((counter / queue.length) * 100);
+        let unfollowedSuccessfully = false;
+
         try {
-          await fetch(unfollowUserUrlGenerator(user.id), {
+          const response = await fetch(unfollowUserUrlGenerator(user.id), {
             headers: {
               "content-type": "application/x-www-form-urlencoded",
               "x-csrftoken": csrftoken,
@@ -522,50 +628,83 @@ function App() {
             mode: "cors",
             credentials: "include",
           });
-          setState(prevState => {
-            if (prevState.status !== "unfollowing") {
-              return prevState;
-            }
-            return {
-              ...prevState,
-              percentage,
-              unfollowLog: [
-                ...prevState.unfollowLog,
-                {
-                  user,
-                  unfollowedSuccessfully: true,
-                },
-              ],
-            };
-          });
+          unfollowedSuccessfully = response.ok;
+          if (!response.ok) {
+            console.error(`Unfollow failed for ${user.username}: HTTP ${response.status}`);
+          }
         } catch (e) {
           console.error(e);
-          setState(prevState => {
-            if (prevState.status !== "unfollowing") {
-              return prevState;
-            }
-            return {
-              ...prevState,
-              percentage,
-              unfollowLog: [
-                ...prevState.unfollowLog,
-                {
-                  user,
-                  unfollowedSuccessfully: false,
-                },
-              ],
-            };
+          unfollowedSuccessfully = false;
+        }
+
+        if (isAutoQueue) {
+          pace = unfollowedSuccessfully ? onPaceSuccess(pace) : onPaceFailure(pace);
+        }
+
+        const shouldAutoPause =
+          isAutoQueue && pace.consecutiveFail >= AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS;
+
+        if (shouldAutoPause) {
+          unfollowingPaused = true;
+        }
+
+        setState(prevState => {
+          if (prevState.status !== "unfollowing") {
+            return prevState;
+          }
+          return {
+            ...prevState,
+            percentage,
+            pace: isAutoQueue ? pace : prevState.pace,
+            paused: shouldAutoPause ? true : prevState.paused,
+            unfollowLog: [
+              ...prevState.unfollowLog,
+              {
+                user,
+                unfollowedSuccessfully,
+              },
+            ],
+          };
+        });
+
+        if (shouldAutoPause) {
+          setToast({
+            show: true,
+            text: "Paused after 3 consecutive failures. Press Resume when ready.",
           });
         }
-        // If unfollowing the last user in the list, no reason to wait.
-        if (user === state.selectedResults[state.selectedResults.length - 1]) {
+
+        if (user === queue[queue.length - 1]) {
           break;
         }
-        await sleep(Math.floor(Math.random() * (timings.timeBetweenUnfollows * 1.2 - timings.timeBetweenUnfollows)) + timings.timeBetweenUnfollows);
 
-        if (counter % 5 === 0) {
-          setToast({ show: true, text: `Sleeping ${timings.timeToWaitAfterFiveUnfollows / 60000 } minutes to prevent getting temp blocked` });
-          await sleep(timings.timeToWaitAfterFiveUnfollows);
+        if (isAutoQueue) {
+          const betweenSleep = nextBetweenSleepMs(pace);
+          setToast({
+            show: true,
+            text: `Pace ${Math.round(pace.betweenMs / 1000)}s / after5 ${Math.round(pace.afterFiveMs / 1000)}s · ${counter}/${queue.length}`,
+          });
+          await sleep(betweenSleep);
+          if (shouldTakeAfterFiveBreak(counter)) {
+            setToast({
+              show: true,
+              text: `Sleeping ${Math.round(pace.afterFiveMs / 1000)}s after 5 unfollows (${counter}/${queue.length})`,
+            });
+            await sleep(pace.afterFiveMs);
+          }
+        } else {
+          await sleep(
+            Math.floor(
+              Math.random() * (timings.timeBetweenUnfollows * 1.2 - timings.timeBetweenUnfollows),
+            ) + timings.timeBetweenUnfollows,
+          );
+          if (counter % 5 === 0) {
+            setToast({
+              show: true,
+              text: `Sleeping ${timings.timeToWaitAfterFiveUnfollows / 60000} minutes to prevent getting temp blocked`,
+            });
+            await sleep(timings.timeToWaitAfterFiveUnfollows);
+          }
         }
         setToast({ show: false });
       }
@@ -596,6 +735,7 @@ function App() {
         maxUnfollowsPerRun={maxUnfollowsPerRun}
         onMaxUnfollowsPerRunChange={onMaxUnfollowsPerRunChange}
         startUnfollowing={startUnfollowing}
+        startAutoQueueUnfollowing={startAutoQueueUnfollowing}
       ></Searching>;
       break;
     }
@@ -604,6 +744,7 @@ function App() {
       markup = <Unfollowing
         state={state}
         handleUnfollowFilter={handleUnfollowFilter}
+        toggleUnfollowingPaused={toggleUnfollowingPaused}
       ></Unfollowing>;
       break;
 

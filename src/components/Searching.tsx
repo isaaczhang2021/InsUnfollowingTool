@@ -31,6 +31,7 @@ export interface SearchingProps {
   maxUnfollowsPerRun: number;
   onMaxUnfollowsPerRunChange: (maxUnfollows: number) => void;
   startUnfollowing: () => void;
+  startAutoQueueUnfollowing: () => void;
 }
 
 export const Searching = ({
@@ -47,6 +48,7 @@ export const Searching = ({
   maxUnfollowsPerRun,
   onMaxUnfollowsPerRunChange,
   startUnfollowing,
+  startAutoQueueUnfollowing,
 }: SearchingProps) => {
   // Kept as a draft so clearing the field while typing does not immediately snap back to the minimum.
   const [maxUnfollowsDraft, setMaxUnfollowsDraft] = useState(String(maxUnfollowsPerRun));
@@ -66,12 +68,20 @@ export const Searching = ({
     state.searchTerm,
     state.filter,
   );
+  const autoQueueCandidates = getUsersForDisplay(
+    state.results,
+    state.whitelistedResults,
+    "non_whitelisted",
+    state.searchTerm,
+    state.filter,
+  );
   // A page size typed in the settings menu is not necessarily one of the shortcuts.
   const pageSizeOptions = PAGE_SIZE_CHOICES.includes(pageSize)
     ? PAGE_SIZE_CHOICES
     : [...PAGE_SIZE_CHOICES, pageSize].sort((a, b) => a - b);
   const unfollowCount = Math.min(state.selectedResults.length, maxUnfollowsPerRun);
   const isCapped = state.selectedResults.length > maxUnfollowsPerRun;
+  const canStartAutoQueue = state.percentage === 100 && autoQueueCandidates.length > 0;
   let currentLetter = "";
 
   const onNewLetter = (firstLetter: string) => {
@@ -300,6 +310,18 @@ export const Searching = ({
         >
           Unfollow ({unfollowCount})
         </button>
+        <button
+          className="unfollow-all-matching"
+          type="button"
+          disabled={!canStartAutoQueue}
+          title="Queue every non-whitelisted account that matches the current filters and keep going until done"
+          onClick={startAutoQueueUnfollowing}
+        >
+          Unfollow all matching ({autoQueueCandidates.length})
+        </button>
+        <span className="unfollow-all-hint">
+          Auto queue uses current filters. Pace starts at 4s / after5 1min, then speeds up.
+        </span>
       </aside>
       <article className="results-container">
         <nav className="tabs-container">
