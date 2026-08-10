@@ -1,22 +1,27 @@
 import React from "react";
 import { getUnfollowLogForDisplay } from "../utils/utils";
+import { estimateRemainingMs, formatDuration } from "../utils/pace-manager";
 import { State } from "../model/state";
 
 interface UnfollowingProps {
   state: State;
   handleUnfollowFilter: (e: React.ChangeEvent<HTMLInputElement>) => void;
-
+  toggleUnfollowingPaused: () => void;
 }
 
-export const Unfollowing = (
-  {
-    state,
-    handleUnfollowFilter,
-  }: UnfollowingProps) => {
-
+export const Unfollowing = ({
+  state,
+  handleUnfollowFilter,
+  toggleUnfollowingPaused,
+}: UnfollowingProps) => {
   if (state.status !== "unfollowing") {
     return null;
   }
+
+  const doneCount = state.unfollowLog.length;
+  const remaining = Math.max(0, state.queueTotal - doneCount);
+  const estimatedRemaining = formatDuration(estimateRemainingMs(remaining, state.pace));
+  const isComplete = doneCount === state.selectedResults.length;
 
   return (
     <section className="workspace-layout">
@@ -25,6 +30,50 @@ export const Unfollowing = (
           <span>Unfollow Queue</span>
           <strong>{state.percentage}%</strong>
         </div>
+        <div className="unfollow-progress metric-stack">
+          <p>
+            <span>Progress</span>
+            <strong>
+              {doneCount}/{state.queueTotal}
+            </strong>
+          </p>
+          {state.mode === "auto_queue" && (
+            <>
+              <p>
+                <span>Mode</span>
+                <strong>Auto queue</strong>
+              </p>
+              <p>
+                <span>Pace</span>
+                <strong>
+                  {Math.round(state.pace.betweenMs / 1000)}s / after5{" "}
+                  {Math.round(state.pace.afterFiveMs / 1000)}s
+                </strong>
+              </p>
+              {!isComplete && (
+                <p>
+                  <span>Est. left</span>
+                  <strong>{estimatedRemaining}</strong>
+                </p>
+              )}
+              {state.paused && (
+                <p className="unfollow-paused-banner">
+                  <span>Status</span>
+                  <strong>Paused</strong>
+                </p>
+              )}
+            </>
+          )}
+        </div>
+        {state.mode === "auto_queue" && !isComplete && (
+          <button
+            type="button"
+            className="button-control button-pause"
+            onClick={toggleUnfollowingPaused}
+          >
+            {state.paused ? "Resume" : "Pause"}
+          </button>
+        )}
         <menu className="flex column grow m-clear p-clear">
           <p>Filter</p>
           <label className="badge m-small">
@@ -48,7 +97,7 @@ export const Unfollowing = (
         </menu>
       </aside>
       <article className="unfollow-log-container">
-        {state.unfollowLog.length === state.selectedResults.length && (
+        {isComplete && (
           <>
             <hr />
             <div className="fs-large p-medium clr-green">All DONE!</div>

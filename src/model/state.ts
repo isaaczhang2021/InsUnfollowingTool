@@ -3,6 +3,7 @@ import { ScanningTab } from "./scanning-tab";
 import { ScanningFilter } from "./scanning-filter";
 import { UnfollowLogEntry } from "./unfollow-log-entry";
 import { UnfollowFilter } from "./unfollow-filter";
+import { Pace } from "./pace";
 
 type ScanningState = {
   readonly status: 'scanning';
@@ -23,6 +24,10 @@ type UnfollowingState = {
   readonly selectedResults: readonly UserNode[];
   readonly unfollowLog: readonly UnfollowLogEntry[];
   readonly filter: UnfollowFilter;
+  readonly mode: 'manual' | 'auto_queue';
+  readonly paused: boolean;
+  readonly queueTotal: number;
+  readonly pace: Pace;
 };
 
 //TODO THIS TYPE OF MULTIPLE STATE NEEDS TO BE SEPARETED IN DIFFERENT FILES ASAP (Global state,unfollowing state, scanning state etc...)

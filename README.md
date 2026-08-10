@@ -53,7 +53,13 @@ This version utilizes the Instagram API for better performance.
     If you select more than the cap, only the first accounts of the selection are unfollowed and the
     rest are left untouched. Whitelisted accounts are never unfollowed.
 
-13. ⚙️ Customize script timings via the "Settings" button:
+13. 🚀 Or use **Unfollow all matching** to queue every non-whitelisted account that matches the current
+    sidebar filters and keep going until the queue is empty (no per-run cap). Pace starts around
+    4 seconds between unfollows and 1 minute after every 5, then gradually speeds up while successful.
+    After 3 consecutive failures the queue pauses automatically — press Resume when ready.
+    Keep the tab open and do not let the computer sleep for long runs.
+
+14. ⚙️ Customize script timings via the "Settings" button (used by the manual Unfollow button):
 
     <img src="./assets/settings.png" alt="Settings screen" />
 
@@ -66,9 +72,11 @@ repo) and export the accounts you want to keep, you can feed that decision strai
 2. In the tool, open **Settings → Whitelist → Import** and pick that file
 3. Everything you imported moves to the **Whitelisted** tab and disappears from **Non-Whitelisted**
 4. Set "Per page" and "Max unfollow this run" to a batch size you are comfortable with
-5. On the **Non-Whitelisted** tab, filter, then either tick accounts manually or press
-   **Select first N** to take the first N accounts of the current filter
-6. Press **Unfollow** and repeat with a fresh run when you want to continue
+5. On the **Non-Whitelisted** tab, filter (for example keep only Non-Followers checked)
+6. Either:
+   - tick accounts / **Select first N** / **Unfollow** for small batches, or
+   - press **Unfollow all matching** to auto-queue the full filtered list and let it run for hours
+7. If the auto queue pauses after failures, press **Resume**; leave the tab open until it finishes
 
 Page size and the per run cap are remembered in `localStorage`, so they survive pasting the script again
 in the same browser.
@@ -95,6 +103,7 @@ For Android users who want to use it on mobile:
 - 💾 Export/Import whitelist functionality for backup and transfer
 - 📄 Configurable page size so you can review 20 or 200 accounts at a time
 - 🛑 Per run unfollow cap, so a large selection is processed in safe batches
+- 🚀 Auto queue: unfollow all matching non-whitelisted accounts with adaptive pacing
 - ⚙️ Customizable timing settings to avoid rate limits
 - 🎨 Clean, minimalist interface inspired by Apple design
 - 📱 Fully responsive - works on desktop and mobile
