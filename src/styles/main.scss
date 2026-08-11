@@ -1716,6 +1716,56 @@ html .iu button.run-scan:hover {
     color: #f5b3ae;
 }
 
+.iu .whitelist-selected-btn {
+    grid-column: 1 / -1;
+}
+
+.iu .pace-debug {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin: 0.55rem 0;
+    padding: 0.55rem 0.6rem;
+    border: 1px solid rgba(98, 214, 208, 0.28);
+    border-radius: 7px;
+    background: rgba(98, 214, 208, 0.08);
+}
+
+.iu .pace-debug-locked {
+    opacity: 0.72;
+}
+
+.iu .pace-debug-title {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.74rem;
+}
+
+.iu .pace-debug label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    color: var(--muted);
+    font-size: 0.76rem;
+}
+
+.iu .pace-debug input[type="number"] {
+    width: 100%;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.82rem;
+}
+
+.iu .pace-log-line {
+    color: var(--cyan);
+    font-size: 0.86rem;
+    opacity: 0.92;
+}
+
 .iu .results-container,
 .iu .unfollow-log-container {
     padding-top: 4.5rem !important;

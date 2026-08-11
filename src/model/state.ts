@@ -4,6 +4,7 @@ import { ScanningFilter } from "./scanning-filter";
 import { UnfollowLogEntry } from "./unfollow-log-entry";
 import { UnfollowFilter } from "./unfollow-filter";
 import { Pace } from "./pace";
+import { PaceLogEntry } from "./pace-log-entry";
 
 type ScanningState = {
   readonly status: 'scanning';
@@ -23,6 +24,7 @@ type UnfollowingState = {
   readonly percentage: number;
   readonly selectedResults: readonly UserNode[];
   readonly unfollowLog: readonly UnfollowLogEntry[];
+  readonly paceLog: readonly PaceLogEntry[];
   readonly filter: UnfollowFilter;
   readonly mode: 'manual' | 'auto_queue';
   readonly paused: boolean;

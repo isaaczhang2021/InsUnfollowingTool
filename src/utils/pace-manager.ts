@@ -103,3 +103,32 @@ export const formatDuration = (ms: number): string => {
   }
   return `~${totalSeconds}s`;
 };
+
+export const formatWaitMs = (ms: number): string => {
+  if (ms >= 10000) {
+    return `${Math.round(ms / 1000)}s`;
+  }
+  return `${(ms / 1000).toFixed(1)}s`;
+};
+
+/**
+ * Clamp a user-edited pace (seconds -> ms) into the allowed auto-queue range.
+ */
+export const clampPaceFromSeconds = (
+  betweenSeconds: number,
+  afterFiveSeconds: number,
+  base: Pace,
+): Pace => ({
+  betweenMs: clamp(
+    Math.round(betweenSeconds * 1000),
+    AUTO_PACE_MIN_BETWEEN_MS,
+    Math.round(AUTO_PACE_START_BETWEEN_MS * AUTO_PACE_FAIL_BETWEEN_FACTOR),
+  ),
+  afterFiveMs: clamp(
+    Math.round(afterFiveSeconds * 1000),
+    AUTO_PACE_MIN_AFTER_FIVE_MS,
+    Math.round(AUTO_PACE_START_AFTER_FIVE_MS * AUTO_PACE_FAIL_AFTER_FIVE_FACTOR),
+  ),
+  consecutiveSuccess: 0,
+  consecutiveFail: base.consecutiveFail,
+});

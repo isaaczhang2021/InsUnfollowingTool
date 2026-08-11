@@ -25,8 +25,11 @@ import {
   onPaceFailure,
   nextBetweenSleepMs,
   shouldTakeAfterFiveBreak,
+  clampPaceFromSeconds,
+  formatWaitMs,
 } from "./utils/pace-manager";
 import { Pace } from "./model/pace";
+import { PaceLogEntry } from "./model/pace-log-entry";
 import { NotSearching } from "./components/NotSearching";
 import { State } from "./model/state";
 import { Searching } from "./components/Searching";
@@ -100,6 +103,8 @@ const _getPreviewUsers = (): readonly UserNode[] => [
 // pause
 let scanningPaused = false;
 let unfollowingPaused = false;
+// Applied while paused; the auto-queue loop picks this up on Resume.
+let pendingPaceOverride: Pace | null = null;
 
 function pauseScan() {
   scanningPaused = !scanningPaused;
@@ -390,12 +395,14 @@ function App() {
       return;
     }
     unfollowingPaused = false;
+    pendingPaceOverride = null;
     const newState: State = {
       ...state,
       status: "unfollowing",
       percentage: 0,
       selectedResults: usersToUnfollow,
       unfollowLog: [],
+      paceLog: [],
       filter: {
         showSucceeded: true,
         showFailed: true,
@@ -438,12 +445,14 @@ function App() {
       return;
     }
     unfollowingPaused = false;
+    pendingPaceOverride = null;
     const newState: State = {
       ...state,
       status: "unfollowing",
       percentage: 0,
       selectedResults: queue,
       unfollowLog: [],
+      paceLog: [],
       filter: {
         showSucceeded: true,
         showFailed: true,
@@ -482,6 +491,26 @@ function App() {
       return;
     }
     setUnfollowingPaused(!state.paused);
+  };
+
+  const applyUnfollowingPace = (betweenSeconds: number, afterFiveSeconds: number) => {
+    if (state.status !== "unfollowing" || state.mode !== "auto_queue") {
+      return;
+    }
+    if (!state.paused) {
+      alert("Pause the queue before changing pace.");
+      return;
+    }
+    const nextPace = clampPaceFromSeconds(betweenSeconds, afterFiveSeconds, state.pace);
+    pendingPaceOverride = nextPace;
+    setState({
+      ...state,
+      pace: nextPace,
+    });
+    setToast({
+      show: true,
+      text: `Pace set to ${formatWaitMs(nextPace.betweenMs)} / after5 ${formatWaitMs(nextPace.afterFiveMs)}. Resume to continue.`,
+    });
   };
 
   useEffect(() => {
@@ -603,15 +632,33 @@ function App() {
       let counter = 0;
       const queue = state.selectedResults;
 
+      const appendPaceLog = (entry: PaceLogEntry) => {
+        setState(prevState => {
+          if (prevState.status !== "unfollowing") {
+            return prevState;
+          }
+          return {
+            ...prevState,
+            paceLog: [...prevState.paceLog, entry],
+            pace: isAutoQueue ? pace : prevState.pace,
+          };
+        });
+      };
+
       for (const user of queue) {
         let wasPaused = false;
         while (unfollowingPaused) {
           wasPaused = true;
           await sleep(1000);
         }
-        // Align with Resume clearing the fail streak in React state.
+        // Align with Resume clearing the fail streak; pick up Apply pace overrides.
         if (isAutoQueue && wasPaused) {
-          pace = { ...pace, consecutiveFail: 0 };
+          if (pendingPaceOverride !== null) {
+            pace = { ...pendingPaceOverride, consecutiveFail: 0 };
+            pendingPaceOverride = null;
+          } else {
+            pace = { ...pace, consecutiveFail: 0 };
+          }
         }
 
         counter += 1;
@@ -680,30 +727,52 @@ function App() {
 
         if (isAutoQueue) {
           const betweenSleep = nextBetweenSleepMs(pace);
+          appendPaceLog({
+            kind: "between",
+            afterCount: counter,
+            waitedMs: betweenSleep,
+          });
           setToast({
             show: true,
-            text: `Pace ${Math.round(pace.betweenMs / 1000)}s / after5 ${Math.round(pace.afterFiveMs / 1000)}s · ${counter}/${queue.length}`,
+            text: `Waited ${formatWaitMs(betweenSleep)} · after5 ${formatWaitMs(pace.afterFiveMs)} · ${counter}/${queue.length}`,
           });
           await sleep(betweenSleep);
           if (shouldTakeAfterFiveBreak(counter)) {
+            const afterFiveSleep = pace.afterFiveMs;
+            appendPaceLog({
+              kind: "after_five",
+              afterCount: counter,
+              waitedMs: afterFiveSleep,
+            });
             setToast({
               show: true,
-              text: `Sleeping ${Math.round(pace.afterFiveMs / 1000)}s after 5 unfollows (${counter}/${queue.length})`,
+              text: `After-5 break ${formatWaitMs(afterFiveSleep)} (at #${counter}/${queue.length})`,
             });
-            await sleep(pace.afterFiveMs);
+            await sleep(afterFiveSleep);
           }
         } else {
-          await sleep(
+          const betweenSleep =
             Math.floor(
               Math.random() * (timings.timeBetweenUnfollows * 1.2 - timings.timeBetweenUnfollows),
-            ) + timings.timeBetweenUnfollows,
-          );
+            ) + timings.timeBetweenUnfollows;
+          appendPaceLog({
+            kind: "between",
+            afterCount: counter,
+            waitedMs: betweenSleep,
+          });
+          await sleep(betweenSleep);
           if (counter % 5 === 0) {
+            const afterFiveSleep = timings.timeToWaitAfterFiveUnfollows;
+            appendPaceLog({
+              kind: "after_five",
+              afterCount: counter,
+              waitedMs: afterFiveSleep,
+            });
             setToast({
               show: true,
-              text: `Sleeping ${timings.timeToWaitAfterFiveUnfollows / 60000} minutes to prevent getting temp blocked`,
+              text: `Sleeping ${afterFiveSleep / 60000} minutes to prevent getting temp blocked`,
             });
-            await sleep(timings.timeToWaitAfterFiveUnfollows);
+            await sleep(afterFiveSleep);
           }
         }
         setToast({ show: false });
@@ -745,6 +814,7 @@ function App() {
         state={state}
         handleUnfollowFilter={handleUnfollowFilter}
         toggleUnfollowingPaused={toggleUnfollowingPaused}
+        applyUnfollowingPace={applyUnfollowingPace}
       ></Unfollowing>;
       break;
 
