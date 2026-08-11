@@ -104,7 +104,7 @@ export const SettingMenu = ({
                   type="number"
                   id="timeBetweenUnfollow"
                   name="timeBetweenUnfollow"
-                  min={1000}
+                  min={500}
                   max={999999}
                   value={timeBetweenUnfollows}
                   onChange={(e) => handleInputChange(e, setTimeBetweenUnfollows)}
@@ -118,7 +118,7 @@ export const SettingMenu = ({
                   type="number"
                   id="timeAfterFiveUnfollows"
                   name="timeAfterFiveUnfollows"
-                  min={70000}
+                  min={10000}
                   max={999999}
                   value={timeToWaitAfterFiveUnfollows}
                   onChange={(e) => handleInputChange(e, setTimeToWaitAfterFiveUnfollows)}

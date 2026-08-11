@@ -18,9 +18,9 @@ export const MAX_UNFOLLOWS_PER_RUN = 100;
 
 // AUTO-QUEUE ADAPTIVE PACE (more aggressive than default Settings timings)
 export const AUTO_PACE_START_BETWEEN_MS = 4000;
-export const AUTO_PACE_MIN_BETWEEN_MS = 2000;
+export const AUTO_PACE_MIN_BETWEEN_MS = 1000;
 export const AUTO_PACE_START_AFTER_FIVE_MS = 60000;
-export const AUTO_PACE_MIN_AFTER_FIVE_MS = 30000;
+export const AUTO_PACE_MIN_AFTER_FIVE_MS = 10000;
 export const AUTO_PACE_SPEEDUP_EVERY_SUCCESS = 25;
 export const AUTO_PACE_SPEEDUP_FACTOR = 0.9;
 export const AUTO_PACE_FAIL_BETWEEN_FACTOR = 1.5;
