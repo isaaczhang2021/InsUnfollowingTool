@@ -162,6 +162,30 @@ export function sleep(ms: number): Promise<any> {
   });
 }
 
+/**
+ * Sleep in short ticks so a Pause flag can abort the wait early.
+ * Returns how long we actually waited (may be less than `ms` if aborted).
+ */
+export async function sleepInterruptible(
+  ms: number,
+  shouldStop: () => boolean,
+  tickMs = 250,
+): Promise<number> {
+  const planned = Math.max(0, ms);
+  if (planned === 0) {
+    return 0;
+  }
+  const start = Date.now();
+  const end = start + planned;
+  while (Date.now() < end) {
+    if (shouldStop()) {
+      return Date.now() - start;
+    }
+    await sleep(Math.min(tickMs, end - Date.now()));
+  }
+  return planned;
+}
+
 export function getCookie(name: string): string | null {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -182,4 +206,33 @@ export function urlGenerator(nextCode?: string): string {
 
 export function unfollowUserUrlGenerator(idToUnfollow: string): string {
   return `https://www.instagram.com/web/friendships/${idToUnfollow}/unfollow/`;
+}
+
+export interface UnfollowOutcome {
+  readonly successful: boolean;
+  readonly detail: string;
+}
+
+/**
+ * Instagram answers 200 even when it silently refuses the unfollow (soft rate limit),
+ * so only a parsed `status: "ok"` body counts as success.
+ */
+export async function readUnfollowOutcome(response: Response): Promise<UnfollowOutcome> {
+  let rawBody = "";
+  try {
+    rawBody = await response.text();
+  } catch (e) {
+    rawBody = "";
+  }
+  const detail = `HTTP ${response.status} ${rawBody.slice(0, 200)}`.trim();
+  if (!response.ok) {
+    return { successful: false, detail };
+  }
+  try {
+    const body: unknown = JSON.parse(rawBody);
+    const status = (body as { status?: unknown } | null)?.status;
+    return { successful: status === "ok", detail };
+  } catch (e) {
+    return { successful: false, detail };
+  }
 }
