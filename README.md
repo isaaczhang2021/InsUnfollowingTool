@@ -57,9 +57,13 @@ This version utilizes the Instagram API for better performance.
     sidebar filters and keep going until the queue is empty (no per-run cap). Pace starts around
     4 seconds between unfollows and 1 minute after every 5, then gradually speeds up while successful.
     After 3 consecutive failures the queue pauses automatically — press Resume when ready.
-    Keep the tab open and do not let the computer sleep for long runs.
+    While paused you can edit **Between** / **After every 5**, press **Apply pace**, then **Resume**.
+    The log records each wait and each after-5 break. Keep the tab open and do not let the computer sleep.
 
-14. ⚙️ Customize script timings via the "Settings" button (used by the manual Unfollow button):
+14. 🤍 Multi-select accounts and press **Whitelist selected** to protect them in bulk (or
+    **Remove from whitelist** on the Whitelisted tab). Clicking an avatar still toggles one account.
+
+15. ⚙️ Customize script timings via the "Settings" button (used by the manual Unfollow button):
 
     <img src="./assets/settings.png" alt="Settings screen" />
 
@@ -75,8 +79,9 @@ repo) and export the accounts you want to keep, you can feed that decision strai
 5. On the **Non-Whitelisted** tab, filter (for example keep only Non-Followers checked)
 6. Either:
    - tick accounts / **Select first N** / **Unfollow** for small batches, or
-   - press **Unfollow all matching** to auto-queue the full filtered list and let it run for hours
-7. If the auto queue pauses after failures, press **Resume**; leave the tab open until it finishes
+   - press **Whitelist selected** for accounts you want to keep, then
+     **Unfollow all matching** to auto-queue the rest
+7. If the auto queue pauses, edit Between / After5 → **Apply pace** → **Resume**; leave the tab open until it finishes
 
 Page size and the per run cap are remembered in `localStorage`, so they survive pasting the script again
 in the same browser.
@@ -104,6 +109,8 @@ For Android users who want to use it on mobile:
 - 📄 Configurable page size so you can review 20 or 200 accounts at a time
 - 🛑 Per run unfollow cap, so a large selection is processed in safe batches
 - 🚀 Auto queue: unfollow all matching non-whitelisted accounts with adaptive pacing
+- 🧪 Pause to edit unfollow intervals; log shows each wait and after-5 break
+- 🤍 Bulk whitelist selected accounts from the scan list
 - ⚙️ Customizable timing settings to avoid rate limits
 - 🎨 Clean, minimalist interface inspired by Apple design
 - 📱 Fully responsive - works on desktop and mobile

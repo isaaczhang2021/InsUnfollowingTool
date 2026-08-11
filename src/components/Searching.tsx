@@ -186,6 +186,43 @@ export const Searching = ({
             >
               Clear
             </button>
+            <button
+              className="button-secondary whitelist-selected-btn"
+              type="button"
+              disabled={state.selectedResults.length === 0}
+              title={
+                state.currentTab === "non_whitelisted"
+                  ? "Move checked accounts into the whitelist"
+                  : "Remove checked accounts from the whitelist"
+              }
+              onClick={() => {
+                if (state.selectedResults.length === 0) {
+                  return;
+                }
+                const selectedIds = new Set(state.selectedResults.map(u => u.id));
+                let whitelistedResults: readonly UserNode[];
+                if (state.currentTab === "non_whitelisted") {
+                  const existingIds = new Set(state.whitelistedResults.map(u => u.id));
+                  const toAdd = state.selectedResults.filter(u => !existingIds.has(u.id));
+                  whitelistedResults = [...state.whitelistedResults, ...toAdd];
+                } else {
+                  whitelistedResults = state.whitelistedResults.filter(u => !selectedIds.has(u.id));
+                }
+                localStorage.setItem(
+                  WHITELISTED_RESULTS_STORAGE_KEY,
+                  JSON.stringify(whitelistedResults),
+                );
+                setState({
+                  ...state,
+                  whitelistedResults,
+                  selectedResults: [],
+                });
+              }}
+            >
+              {state.currentTab === "non_whitelisted"
+                ? `Whitelist selected (${state.selectedResults.length})`
+                : `Remove from whitelist (${state.selectedResults.length})`}
+            </button>
           </div>
           <div className="sidebar-stats metric-stack">
             <p><span>Displayed</span><strong>{usersForDisplay.length}</strong></p>
@@ -390,7 +427,12 @@ export const Searching = ({
                         WHITELISTED_RESULTS_STORAGE_KEY,
                         JSON.stringify(whitelistedResults),
                       );
-                      setState({ ...state, whitelistedResults });
+                      // Drop the user from the unfollow selection so Unfollow(N) stays accurate.
+                      setState({
+                        ...state,
+                        whitelistedResults,
+                        selectedResults: state.selectedResults.filter(result => result.id !== user.id),
+                      });
                     }}
                   >
                     <img
