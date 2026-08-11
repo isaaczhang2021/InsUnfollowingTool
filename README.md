@@ -11,7 +11,11 @@ This version utilizes the Instagram API for better performance.
 
 ## 🖥️ Desktop Usage
 
-1. Copy the code from: [InstagramUnfollowers Tool](https://davidarroyo1234.github.io/InstagramUnfollowers/)
+1. Copy the code from: [InstagramUnfollowers Tool](https://isaaczhang2021.github.io/InsUnfollowingTool/)
+
+    This fork's own build — the upstream page does not include the auto queue, pace debug, or bulk
+    whitelist features. A script already pasted in the console never hot-updates, so re-copy after
+    every merge and Pages deploy.
 
 2. Press the COPY button to copy the code.
 

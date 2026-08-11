@@ -17,7 +17,12 @@ import {
   getCookie,
   getCurrentPageUnfollowers,
   getMaxPage,
-  getUsersForDisplay, sleep, unfollowUserUrlGenerator, urlGenerator,
+  getUsersForDisplay,
+  readUnfollowOutcome,
+  sleep,
+  sleepInterruptible,
+  unfollowUserUrlGenerator,
+  urlGenerator,
 } from "./utils/utils";
 import {
   createInitialPace,
@@ -651,12 +656,14 @@ function App() {
           wasPaused = true;
           await sleep(1000);
         }
-        // Align with Resume clearing the fail streak; pick up Apply pace overrides.
-        if (isAutoQueue && wasPaused) {
+        // Apply pace can land while a sleep is still running, so consume the override
+        // regardless of whether this iteration actually waited in the pause loop.
+        if (isAutoQueue) {
           if (pendingPaceOverride !== null) {
             pace = { ...pendingPaceOverride, consecutiveFail: 0 };
             pendingPaceOverride = null;
-          } else {
+          } else if (wasPaused) {
+            // Align with Resume clearing the fail streak.
             pace = { ...pace, consecutiveFail: 0 };
           }
         }
@@ -675,9 +682,10 @@ function App() {
             mode: "cors",
             credentials: "include",
           });
-          unfollowedSuccessfully = response.ok;
-          if (!response.ok) {
-            console.error(`Unfollow failed for ${user.username}: HTTP ${response.status}`);
+          const outcome = await readUnfollowOutcome(response);
+          unfollowedSuccessfully = outcome.successful;
+          if (!outcome.successful) {
+            console.error(`Unfollow failed for ${user.username}: ${outcome.detail}`);
           }
         } catch (e) {
           console.error(e);
@@ -727,28 +735,26 @@ function App() {
 
         if (isAutoQueue) {
           const betweenSleep = nextBetweenSleepMs(pace);
+          setToast({
+            show: true,
+            text: `Waiting ${formatWaitMs(betweenSleep)} · after5 ${formatWaitMs(pace.afterFiveMs)} · ${counter}/${queue.length}`,
+          });
           appendPaceLog({
             kind: "between",
             afterCount: counter,
-            waitedMs: betweenSleep,
+            waitedMs: await sleepInterruptible(betweenSleep, () => unfollowingPaused),
           });
-          setToast({
-            show: true,
-            text: `Waited ${formatWaitMs(betweenSleep)} · after5 ${formatWaitMs(pace.afterFiveMs)} · ${counter}/${queue.length}`,
-          });
-          await sleep(betweenSleep);
           if (shouldTakeAfterFiveBreak(counter)) {
             const afterFiveSleep = pace.afterFiveMs;
-            appendPaceLog({
-              kind: "after_five",
-              afterCount: counter,
-              waitedMs: afterFiveSleep,
-            });
             setToast({
               show: true,
               text: `After-5 break ${formatWaitMs(afterFiveSleep)} (at #${counter}/${queue.length})`,
             });
-            await sleep(afterFiveSleep);
+            appendPaceLog({
+              kind: "after_five",
+              afterCount: counter,
+              waitedMs: await sleepInterruptible(afterFiveSleep, () => unfollowingPaused),
+            });
           }
         } else {
           const betweenSleep =
