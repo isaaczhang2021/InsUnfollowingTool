@@ -26,6 +26,10 @@ export const AUTO_PACE_SPEEDUP_FACTOR = 0.9;
 export const AUTO_PACE_FAIL_BETWEEN_FACTOR = 1.5;
 export const AUTO_PACE_FAIL_AFTER_FIVE_FACTOR = 2;
 export const AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS = 3;
+// Pausing to edit the pace by hand allows slower values than the adaptive slowdown ever picks,
+// so recovering from a rate limit does not require restarting the queue.
+export const AUTO_PACE_DEBUG_MAX_BETWEEN_MS = 30000;
+export const AUTO_PACE_DEBUG_MAX_AFTER_FIVE_MS = 600000;
 
 //TIMINGS CONSTANTS
 export const DEFAULT_TIME_BETWEEN_SEARCH_CYCLES = 1000;

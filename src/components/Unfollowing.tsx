@@ -8,6 +8,8 @@ import {
 import {
   AUTO_PACE_MIN_BETWEEN_MS,
   AUTO_PACE_MIN_AFTER_FIVE_MS,
+  AUTO_PACE_DEBUG_MAX_BETWEEN_MS,
+  AUTO_PACE_DEBUG_MAX_AFTER_FIVE_MS,
 } from "../constants/constants";
 import { State } from "../model/state";
 
@@ -144,12 +146,18 @@ export const Unfollowing = ({
             </button>
             <div className={`pace-debug ${state.paused ? "" : "pace-debug-locked"}`}>
               <p className="pace-debug-title">Debug pace (pause to edit)</p>
+              <p className="pace-debug-range">
+                Range: {AUTO_PACE_MIN_BETWEEN_MS / 1000}-{AUTO_PACE_DEBUG_MAX_BETWEEN_MS / 1000}s
+                {" / "}
+                {AUTO_PACE_MIN_AFTER_FIVE_MS / 1000}-{AUTO_PACE_DEBUG_MAX_AFTER_FIVE_MS / 1000}s
+              </p>
               <label htmlFor="pace-between-input">
                 Between (sec)
                 <input
                   id="pace-between-input"
                   type="number"
                   min={AUTO_PACE_MIN_BETWEEN_MS / 1000}
+                  max={AUTO_PACE_DEBUG_MAX_BETWEEN_MS / 1000}
                   step="0.5"
                   disabled={!state.paused}
                   value={betweenDraft}
@@ -162,6 +170,7 @@ export const Unfollowing = ({
                   id="pace-after5-input"
                   type="number"
                   min={AUTO_PACE_MIN_AFTER_FIVE_MS / 1000}
+                  max={AUTO_PACE_DEBUG_MAX_AFTER_FIVE_MS / 1000}
                   step="1"
                   disabled={!state.paused}
                   value={afterFiveDraft}
