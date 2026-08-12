@@ -512,9 +512,17 @@ function App() {
       ...state,
       pace: nextPace,
     });
+    const clampedFields: string[] = [];
+    if (Math.round(betweenSeconds * 1000) !== nextPace.betweenMs) {
+      clampedFields.push(`Between from ${betweenSeconds}s`);
+    }
+    if (Math.round(afterFiveSeconds * 1000) !== nextPace.afterFiveMs) {
+      clampedFields.push(`After5 from ${afterFiveSeconds}s`);
+    }
+    const clampNote = clampedFields.length === 0 ? "" : ` (capped ${clampedFields.join(", ")})`;
     setToast({
       show: true,
-      text: `Pace set to ${formatWaitMs(nextPace.betweenMs)} / after5 ${formatWaitMs(nextPace.afterFiveMs)}. Resume to continue.`,
+      text: `Pace set to ${formatWaitMs(nextPace.betweenMs)} / after5 ${formatWaitMs(nextPace.afterFiveMs)}${clampNote}. Resume to continue.`,
     });
   };
 

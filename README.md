@@ -62,8 +62,9 @@ This version utilizes the Instagram API for better performance.
     4 seconds between unfollows and 1 minute after every 5, then gradually speeds up while successful.
     After 3 consecutive failures the queue pauses automatically — press Resume when ready.
     While paused you can edit **Between** / **After every 5**, press **Apply pace**, then **Resume**.
-    Values are clamped to a floor of 1 second between unfollows and 10 seconds after every 5 —
-    the shorter the waits, the higher the chance Instagram rate limits or temporarily blocks the account.
+    Values are clamped to 1-30 seconds between unfollows and 10-600 seconds after every 5, and the
+    toast says so when a value gets capped. The shorter the waits, the higher the chance Instagram
+    rate limits or temporarily blocks the account, so slow the pace down after a burst of failures.
     The log records each wait and each after-5 break. Keep the tab open and do not let the computer sleep.
 
 14. 🤍 Multi-select accounts and press **Whitelist selected** to protect them in bulk (or

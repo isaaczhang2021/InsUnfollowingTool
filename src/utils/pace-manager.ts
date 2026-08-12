@@ -8,6 +8,8 @@ import {
   AUTO_PACE_SPEEDUP_FACTOR,
   AUTO_PACE_FAIL_BETWEEN_FACTOR,
   AUTO_PACE_FAIL_AFTER_FIVE_FACTOR,
+  AUTO_PACE_DEBUG_MAX_BETWEEN_MS,
+  AUTO_PACE_DEBUG_MAX_AFTER_FIVE_MS,
 } from "../constants/constants";
 
 export const createInitialPace = (): Pace => ({
@@ -122,12 +124,12 @@ export const clampPaceFromSeconds = (
   betweenMs: clamp(
     Math.round(betweenSeconds * 1000),
     AUTO_PACE_MIN_BETWEEN_MS,
-    Math.round(AUTO_PACE_START_BETWEEN_MS * AUTO_PACE_FAIL_BETWEEN_FACTOR),
+    AUTO_PACE_DEBUG_MAX_BETWEEN_MS,
   ),
   afterFiveMs: clamp(
     Math.round(afterFiveSeconds * 1000),
     AUTO_PACE_MIN_AFTER_FIVE_MS,
-    Math.round(AUTO_PACE_START_AFTER_FIVE_MS * AUTO_PACE_FAIL_AFTER_FIVE_FACTOR),
+    AUTO_PACE_DEBUG_MAX_AFTER_FIVE_MS,
   ),
   consecutiveSuccess: 0,
   consecutiveFail: base.consecutiveFail,
