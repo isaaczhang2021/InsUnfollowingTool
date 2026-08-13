@@ -4,6 +4,7 @@ export const WHITELISTED_RESULTS_STORAGE_KEY = "iu_whitelisted-results";
 export const TIMINGS_STORAGE_KEY = "iu_timings";
 export const PAGE_SIZE_STORAGE_KEY = "iu_page-size";
 export const MAX_UNFOLLOWS_PER_RUN_STORAGE_KEY = "iu_max-unfollows-per-run";
+export const FAILURE_COOLDOWN_MINUTES_STORAGE_KEY = "iu_failure-cooldown-minutes";
 
 // PAGINATION CONSTANTS
 export const PAGE_SIZE_CHOICES = [20, 30, 50, 100, 120];
@@ -26,6 +27,10 @@ export const AUTO_PACE_SPEEDUP_FACTOR = 0.9;
 export const AUTO_PACE_FAIL_BETWEEN_FACTOR = 1.5;
 export const AUTO_PACE_FAIL_AFTER_FIVE_FACTOR = 2;
 export const AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS = 3;
+// Instagram keeps refusing for a while once it starts, so the queue waits this long before retrying.
+export const DEFAULT_FAILURE_COOLDOWN_MINUTES = 30;
+export const MIN_FAILURE_COOLDOWN_MINUTES = 5;
+export const MAX_FAILURE_COOLDOWN_MINUTES = 180;
 // Pausing to edit the pace by hand allows slower values than the adaptive slowdown ever picks,
 // so recovering from a rate limit does not require restarting the queue.
 export const AUTO_PACE_DEBUG_MAX_BETWEEN_MS = 30000;

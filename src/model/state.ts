@@ -28,6 +28,8 @@ type UnfollowingState = {
   readonly filter: UnfollowFilter;
   readonly mode: 'manual' | 'auto_queue';
   readonly paused: boolean;
+  readonly pauseKind?: 'manual' | 'cooldown';
+  readonly cooldownEndsAt?: number;
   readonly queueTotal: number;
   readonly pace: Pace;
 };

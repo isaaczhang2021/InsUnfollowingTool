@@ -11,6 +11,10 @@ import {
   DEFAULT_MAX_UNFOLLOWS_PER_RUN,
   MIN_UNFOLLOWS_PER_RUN,
   MAX_UNFOLLOWS_PER_RUN,
+  FAILURE_COOLDOWN_MINUTES_STORAGE_KEY,
+  DEFAULT_FAILURE_COOLDOWN_MINUTES,
+  MIN_FAILURE_COOLDOWN_MINUTES,
+  MAX_FAILURE_COOLDOWN_MINUTES,
 } from "../constants/constants";
 
 /**
@@ -205,4 +209,30 @@ export const loadMaxUnfollowsPerRun = (): number =>
 
 export const saveMaxUnfollowsPerRun = (maxUnfollows: number): void => {
   localStorage.setItem(MAX_UNFOLLOWS_PER_RUN_STORAGE_KEY, String(clampMaxUnfollowsPerRun(maxUnfollows)));
+};
+
+/**
+ * Keep the post-failure cooldown long enough to matter but short of abandoning the run.
+ */
+export const clampFailureCooldownMinutes = (minutes: number): number =>
+  clampWholeNumber(
+    minutes,
+    MIN_FAILURE_COOLDOWN_MINUTES,
+    MAX_FAILURE_COOLDOWN_MINUTES,
+    DEFAULT_FAILURE_COOLDOWN_MINUTES,
+  );
+
+export const loadFailureCooldownMinutes = (): number =>
+  loadClampedNumber(
+    FAILURE_COOLDOWN_MINUTES_STORAGE_KEY,
+    MIN_FAILURE_COOLDOWN_MINUTES,
+    MAX_FAILURE_COOLDOWN_MINUTES,
+    DEFAULT_FAILURE_COOLDOWN_MINUTES,
+  );
+
+export const saveFailureCooldownMinutes = (minutes: number): void => {
+  localStorage.setItem(
+    FAILURE_COOLDOWN_MINUTES_STORAGE_KEY,
+    String(clampFailureCooldownMinutes(minutes)),
+  );
 };
