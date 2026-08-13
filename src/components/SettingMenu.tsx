@@ -7,6 +7,8 @@ import {
   MAX_PAGE_SIZE,
   MIN_UNFOLLOWS_PER_RUN,
   MAX_UNFOLLOWS_PER_RUN,
+  MIN_FAILURE_COOLDOWN_MINUTES,
+  MAX_FAILURE_COOLDOWN_MINUTES,
 } from "../constants/constants";
 
 interface SettingMenuProps {
@@ -19,6 +21,8 @@ interface SettingMenuProps {
   onPageSizeChange: (pageSize: number) => void;
   maxUnfollowsPerRun: number;
   onMaxUnfollowsPerRunChange: (maxUnfollows: number) => void;
+  failureCooldownMinutes: number;
+  onFailureCooldownMinutesChange: (minutes: number) => void;
 }
 
 export const SettingMenu = ({
@@ -31,6 +35,8 @@ export const SettingMenu = ({
   onPageSizeChange,
   maxUnfollowsPerRun,
   onMaxUnfollowsPerRunChange,
+  failureCooldownMinutes,
+  onFailureCooldownMinutesChange,
 }: SettingMenuProps) => {
   const [timeBetweenSearchCycles, setTimeBetweenSearchCycles] = useState(currentTimings.timeBetweenSearchCycles);
   const [timeToWaitAfterFiveSearchCycles, setTimeToWaitAfterFiveSearchCycles] = useState(currentTimings.timeToWaitAfterFiveSearchCycles);
@@ -38,6 +44,7 @@ export const SettingMenu = ({
   const [timeToWaitAfterFiveUnfollows, setTimeToWaitAfterFiveUnfollows] = useState(currentTimings.timeToWaitAfterFiveUnfollows);
   const [accountsPerPage, setAccountsPerPage] = useState(pageSize);
   const [maxUnfollows, setMaxUnfollows] = useState(maxUnfollowsPerRun);
+  const [failureCooldown, setFailureCooldown] = useState(failureCooldownMinutes);
 
   const handleSave = (event: any) => {
     event.preventDefault();
@@ -49,6 +56,7 @@ export const SettingMenu = ({
     });
     onPageSizeChange(accountsPerPage);
     onMaxUnfollowsPerRunChange(maxUnfollows);
+    onFailureCooldownMinutesChange(failureCooldown);
     setSettingState(false);
   };
 
@@ -152,6 +160,20 @@ export const SettingMenu = ({
                   onChange={(e) => handleInputChange(e, setMaxUnfollows)}
                 />
                 <label className="margin-between-input-and-label">(accounts)</label>
+              </div>
+
+              <div className="row">
+                <label className="minimun-width" htmlFor="failureCooldown">Cooldown after 3 failed unfollows</label>
+                <input
+                  type="number"
+                  id="failureCooldown"
+                  name="failureCooldown"
+                  min={MIN_FAILURE_COOLDOWN_MINUTES}
+                  max={MAX_FAILURE_COOLDOWN_MINUTES}
+                  value={failureCooldown}
+                  onChange={(e) => handleInputChange(e, setFailureCooldown)}
+                />
+                <label className="margin-between-input-and-label">(minutes)</label>
               </div>
 
               <div className="warning-container">

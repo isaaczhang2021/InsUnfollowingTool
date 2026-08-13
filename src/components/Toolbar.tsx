@@ -21,6 +21,8 @@ interface ToolBarProps {
   onPageSizeChange: (pageSize: number) => void;
   maxUnfollowsPerRun: number;
   onMaxUnfollowsPerRunChange: (maxUnfollows: number) => void;
+  failureCooldownMinutes: number;
+  onFailureCooldownMinutesChange: (minutes: number) => void;
 }
 
 export const Toolbar = ({
@@ -37,6 +39,8 @@ export const Toolbar = ({
   onPageSizeChange,
   maxUnfollowsPerRun,
   onMaxUnfollowsPerRunChange,
+  failureCooldownMinutes,
+  onFailureCooldownMinutesChange,
 }: ToolBarProps) => {
 
   const [setingMenu, setSettingMenu] = useState(false);
@@ -221,6 +225,8 @@ export const Toolbar = ({
           onPageSizeChange={onPageSizeChange}
           maxUnfollowsPerRun={maxUnfollowsPerRun}
           onMaxUnfollowsPerRunChange={onMaxUnfollowsPerRunChange}
+          failureCooldownMinutes={failureCooldownMinutes}
+          onFailureCooldownMinutesChange={onFailureCooldownMinutesChange}
         ></SettingMenu>
       }
 

@@ -60,7 +60,9 @@ This version utilizes the Instagram API for better performance.
 13. 🚀 Or use **Unfollow all matching** to queue every non-whitelisted account that matches the current
     sidebar filters and keep going until the queue is empty (no per-run cap). Pace starts around
     4 seconds between unfollows and 1 minute after every 5, then gradually speeds up while successful.
-    After 3 consecutive failures the queue pauses automatically — press Resume when ready.
+    After 3 consecutive failures the queue cools down on its own for 30 minutes (configurable between
+    5 and 180 minutes in Settings or in the sidebar) and then resumes by itself, so a rate limit no
+    longer ends the run. The sidebar counts the cooldown down, and Resume skips the rest of it.
     While paused you can edit **Between** / **After every 5**, press **Apply pace**, then **Resume**.
     Values are clamped to 1-30 seconds between unfollows and 10-600 seconds after every 5, and the
     toast says so when a value gets capped. The shorter the waits, the higher the chance Instagram
@@ -88,7 +90,8 @@ repo) and export the accounts you want to keep, you can feed that decision strai
    - tick accounts / **Select first N** / **Unfollow** for small batches, or
    - press **Whitelist selected** for accounts you want to keep, then
      **Unfollow all matching** to auto-queue the rest
-7. If the auto queue pauses, edit Between / After5 → **Apply pace** → **Resume**; leave the tab open until it finishes
+7. If the auto queue starts failing, it cools down and resumes on its own; edit Between / After5 →
+   **Apply pace** → **Resume** to change the pace, and leave the tab open until it finishes
 
 Page size and the per run cap are remembered in `localStorage`, so they survive pasting the script again
 in the same browser.

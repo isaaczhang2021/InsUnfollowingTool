@@ -11,6 +11,7 @@ import { DEFAULT_TIME_BETWEEN_SEARCH_CYCLES,
   DEFAULT_TIME_TO_WAIT_AFTER_FIVE_SEARCH_CYCLES,
   DEFAULT_TIME_TO_WAIT_AFTER_FIVE_UNFOLLOWS,
   AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS,
+  DEFAULT_FAILURE_COOLDOWN_MINUTES,
   INSTAGRAM_HOSTNAME } from "./constants/constants";
 import {
   assertUnreachable,
@@ -52,6 +53,9 @@ import {
   loadMaxUnfollowsPerRun,
   saveMaxUnfollowsPerRun,
   clampMaxUnfollowsPerRun,
+  loadFailureCooldownMinutes,
+  saveFailureCooldownMinutes,
+  clampFailureCooldownMinutes,
 } from "./utils/whitelist-manager";
 
 const LOCAL_PREVIEW_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
@@ -110,6 +114,8 @@ let scanningPaused = false;
 let unfollowingPaused = false;
 // Applied while paused; the auto-queue loop picks this up on Resume.
 let pendingPaceOverride: Pace | null = null;
+// The unfollow loop captures state once, so it reads the cooldown from here to see later edits.
+let failureCooldownMinutes = DEFAULT_FAILURE_COOLDOWN_MINUTES;
 
 function pauseScan() {
   scanningPaused = !scanningPaused;
@@ -157,6 +163,7 @@ function App() {
 
   const [pageSize, setPageSize] = useState<number>(loadPageSize);
   const [maxUnfollowsPerRun, setMaxUnfollowsPerRun] = useState<number>(loadMaxUnfollowsPerRun);
+  const [failureCooldown, setFailureCooldown] = useState<number>(loadFailureCooldownMinutes);
 
   // Save timings whenever they change
   useEffect(() => {
@@ -170,6 +177,11 @@ function App() {
   useEffect(() => {
     saveMaxUnfollowsPerRun(maxUnfollowsPerRun);
   }, [maxUnfollowsPerRun]);
+
+  useEffect(() => {
+    failureCooldownMinutes = failureCooldown;
+    saveFailureCooldownMinutes(failureCooldown);
+  }, [failureCooldown]);
 
 
   let isActiveProcess: boolean;
@@ -380,6 +392,10 @@ function App() {
     setMaxUnfollowsPerRun(clampMaxUnfollowsPerRun(nextMaxUnfollows));
   };
 
+  const onFailureCooldownMinutesChange = (nextMinutes: number) => {
+    setFailureCooldown(clampFailureCooldownMinutes(nextMinutes));
+  };
+
   const startUnfollowing = () => {
     if (state.status !== "scanning") {
       return;
@@ -481,13 +497,24 @@ function App() {
         return {
           ...prevState,
           paused: false,
+          pauseKind: undefined,
+          cooldownEndsAt: undefined,
           pace: {
             ...prevState.pace,
             consecutiveFail: 0,
           },
         };
       }
-      return { ...prevState, paused };
+      return { ...prevState, paused, pauseKind: "manual", cooldownEndsAt: undefined };
+    });
+  };
+
+  const applyFailureCooldown = (minutes: number) => {
+    const clamped = clampFailureCooldownMinutes(minutes);
+    setFailureCooldown(clamped);
+    setToast({
+      show: true,
+      text: `Failure cooldown set to ${clamped}m. Applies to the next cooldown.`,
     });
   };
 
@@ -704,10 +731,11 @@ function App() {
           pace = unfollowedSuccessfully ? onPaceSuccess(pace) : onPaceFailure(pace);
         }
 
-        const shouldAutoPause =
+        const shouldCoolDown =
           isAutoQueue && pace.consecutiveFail >= AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS;
+        const cooldownMs = failureCooldownMinutes * 60 * 1000;
 
-        if (shouldAutoPause) {
+        if (shouldCoolDown) {
           unfollowingPaused = true;
         }
 
@@ -719,7 +747,9 @@ function App() {
             ...prevState,
             percentage,
             pace: isAutoQueue ? pace : prevState.pace,
-            paused: shouldAutoPause ? true : prevState.paused,
+            paused: shouldCoolDown ? true : prevState.paused,
+            pauseKind: shouldCoolDown ? "cooldown" : prevState.pauseKind,
+            cooldownEndsAt: shouldCoolDown ? Date.now() + cooldownMs : prevState.cooldownEndsAt,
             unfollowLog: [
               ...prevState.unfollowLog,
               {
@@ -730,10 +760,30 @@ function App() {
           };
         });
 
-        if (shouldAutoPause) {
+        if (shouldCoolDown) {
           setToast({
             show: true,
-            text: "Paused after 3 consecutive failures. Press Resume when ready.",
+            text: `Cooling down ${failureCooldownMinutes}m after ${AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS} failures. Auto-resume when done.`,
+          });
+          // Resume ends the cooldown early by clearing the pause flag.
+          const cooledMs = await sleepInterruptible(cooldownMs, () => !unfollowingPaused);
+          unfollowingPaused = false;
+          pace = { ...pace, consecutiveFail: 0 };
+          appendPaceLog({
+            kind: "cooldown",
+            afterCount: counter,
+            waitedMs: cooledMs,
+          });
+          setState(prevState => {
+            if (prevState.status !== "unfollowing") {
+              return prevState;
+            }
+            return {
+              ...prevState,
+              paused: false,
+              pauseKind: undefined,
+              cooldownEndsAt: undefined,
+            };
           });
         }
 
@@ -829,6 +879,8 @@ function App() {
         handleUnfollowFilter={handleUnfollowFilter}
         toggleUnfollowingPaused={toggleUnfollowingPaused}
         applyUnfollowingPace={applyUnfollowingPace}
+        failureCooldownMinutes={failureCooldown}
+        applyFailureCooldown={applyFailureCooldown}
       ></Unfollowing>;
       break;
 
@@ -853,6 +905,8 @@ function App() {
           onPageSizeChange={onPageSizeChange}
           maxUnfollowsPerRun={maxUnfollowsPerRun}
           onMaxUnfollowsPerRunChange={onMaxUnfollowsPerRunChange}
+          failureCooldownMinutes={failureCooldown}
+          onFailureCooldownMinutesChange={onFailureCooldownMinutesChange}
         ></Toolbar>
 
         {markup}

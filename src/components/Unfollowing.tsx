@@ -10,6 +10,8 @@ import {
   AUTO_PACE_MIN_AFTER_FIVE_MS,
   AUTO_PACE_DEBUG_MAX_BETWEEN_MS,
   AUTO_PACE_DEBUG_MAX_AFTER_FIVE_MS,
+  MIN_FAILURE_COOLDOWN_MINUTES,
+  MAX_FAILURE_COOLDOWN_MINUTES,
 } from "../constants/constants";
 import { State } from "../model/state";
 
@@ -18,6 +20,8 @@ interface UnfollowingProps {
   handleUnfollowFilter: (e: React.ChangeEvent<HTMLInputElement>) => void;
   toggleUnfollowingPaused: () => void;
   applyUnfollowingPace: (betweenSeconds: number, afterFiveSeconds: number) => void;
+  failureCooldownMinutes: number;
+  applyFailureCooldown: (minutes: number) => void;
 }
 
 export const Unfollowing = ({
@@ -25,6 +29,8 @@ export const Unfollowing = ({
   handleUnfollowFilter,
   toggleUnfollowingPaused,
   applyUnfollowingPace,
+  failureCooldownMinutes,
+  applyFailureCooldown,
 }: UnfollowingProps) => {
   const paceBetweenMs = state.status === "unfollowing" ? state.pace.betweenMs : 0;
   const paceAfterFiveMs = state.status === "unfollowing" ? state.pace.afterFiveMs : 0;
@@ -45,6 +51,26 @@ export const Unfollowing = ({
     state.status,
   ]);
 
+  const [cooldownDraft, setCooldownDraft] = useState(String(failureCooldownMinutes));
+
+  useEffect(() => {
+    setCooldownDraft(String(failureCooldownMinutes));
+  }, [failureCooldownMinutes]);
+
+  const cooldownEndsAt = state.status === "unfollowing" ? state.cooldownEndsAt : undefined;
+  const [cooldownRemainingMs, setCooldownRemainingMs] = useState(0);
+
+  useEffect(() => {
+    if (cooldownEndsAt === undefined) {
+      setCooldownRemainingMs(0);
+      return undefined;
+    }
+    const tick = () => setCooldownRemainingMs(Math.max(0, cooldownEndsAt - Date.now()));
+    tick();
+    const intervalId = setInterval(tick, 1000);
+    return () => clearInterval(intervalId);
+  }, [cooldownEndsAt]);
+
   if (state.status !== "unfollowing") {
     return null;
   }
@@ -55,6 +81,14 @@ export const Unfollowing = ({
   const isComplete = doneCount === state.selectedResults.length;
   const lastBetween = [...state.paceLog].reverse().find(entry => entry.kind === "between");
   const lastAfterFive = [...state.paceLog].reverse().find(entry => entry.kind === "after_five");
+  const isCoolingDown = state.pauseKind === "cooldown";
+
+  const formatCountdown = (ms: number): string => {
+    const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
+  };
 
   type TimelineItem =
     | { readonly key: string; readonly kind: "unfollow"; readonly entry: (typeof state.unfollowLog)[number]; readonly index: number }
@@ -129,7 +163,11 @@ export const Unfollowing = ({
               {state.paused && (
                 <p className="unfollow-paused-banner">
                   <span>Status</span>
-                  <strong>Paused</strong>
+                  <strong>
+                    {isCoolingDown
+                      ? `Cooling down ${formatCountdown(cooldownRemainingMs)}`
+                      : "Paused"}
+                  </strong>
                 </p>
               )}
             </>
@@ -188,6 +226,32 @@ export const Unfollowing = ({
                 Apply pace
               </button>
             </div>
+            <div className="pace-debug">
+              <p className="pace-debug-title">Cooldown after 3 failures</p>
+              <p className="pace-debug-range">
+                Range: {MIN_FAILURE_COOLDOWN_MINUTES}-{MAX_FAILURE_COOLDOWN_MINUTES} min
+                {isCoolingDown ? " (applies to the next cooldown)" : ""}
+              </p>
+              <label htmlFor="failure-cooldown-input">
+                Cooldown (min)
+                <input
+                  id="failure-cooldown-input"
+                  type="number"
+                  min={MIN_FAILURE_COOLDOWN_MINUTES}
+                  max={MAX_FAILURE_COOLDOWN_MINUTES}
+                  step="5"
+                  value={cooldownDraft}
+                  onChange={e => setCooldownDraft(e.currentTarget.value)}
+                />
+              </label>
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={() => applyFailureCooldown(Number(cooldownDraft))}
+              >
+                Apply cooldown
+              </button>
+            </div>
           </>
         )}
         <menu className="flex column grow m-clear p-clear">
@@ -222,6 +286,14 @@ export const Unfollowing = ({
         )}
         {timeline.map(item => {
           if (item.kind === "pace") {
+            if (item.entry.kind === "cooldown") {
+              return (
+                <div className="p-medium pace-log-line clr-red" key={item.key}>
+                  Cooldown after failures: {formatDuration(item.entry.waitedMs)} (at #
+                  {item.entry.afterCount})
+                </div>
+              );
+            }
             if (item.entry.kind === "after_five") {
               return (
                 <div className="p-medium pace-log-line" key={item.key}>
