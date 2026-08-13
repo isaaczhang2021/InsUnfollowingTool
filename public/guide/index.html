@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>使用手册 · Instagram Unfollowers</title>
+  <style>
+    :root {
+      --surface: #111;
+      --surface-raised: #191714;
+      --surface-soft: #1e1d1a;
+      --text: #f7f1e8;
+      --muted: #ada79d;
+      --line: rgba(247, 241, 232, 0.14);
+      --amber: #e0a33a;
+      --cyan: #62d6d0;
+      --rose: #ef6a62;
+      --green: #8ccf7e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(224, 163, 58, 0.16), transparent 32rem),
+        radial-gradient(circle at 86% 12%, rgba(98, 214, 208, 0.12), transparent 30rem),
+        linear-gradient(135deg, #10100f 0%, #191714 52%, #111 100%);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.75;
+    }
+
+    a {
+      color: var(--cyan);
+    }
+
+    code {
+      padding: 0.1em 0.35em;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.3);
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.88em;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding: 0.9rem 1.5rem;
+      border-bottom: 1px solid var(--line);
+      background: rgba(18, 17, 15, 0.86);
+      backdrop-filter: blur(12px);
+    }
+
+    .topbar .brand {
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .topbar .note {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .topbar .spacer {
+      flex: 1;
+    }
+
+    .topbar a.action {
+      padding: 0.45rem 0.8rem;
+      border: 1px solid rgba(224, 163, 58, 0.45);
+      border-radius: 7px;
+      background: rgba(224, 163, 58, 0.14);
+      color: var(--amber);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 16rem minmax(0, 1fr);
+      gap: 2.5rem;
+      max-width: 76rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 5rem;
+    }
+
+    nav.toc {
+      position: sticky;
+      top: 5rem;
+      align-self: start;
+      max-height: calc(100vh - 7rem);
+      overflow-y: auto;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    nav.toc p {
+      margin: 0 0 0.6rem;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    nav.toc ol {
+      margin: 0;
+      padding-left: 1.1rem;
+    }
+
+    nav.toc li {
+      margin: 0.35rem 0;
+      font-size: 0.88rem;
+    }
+
+    nav.toc a {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    nav.toc a:hover {
+      color: var(--cyan);
+    }
+
+    main h1 {
+      margin: 0 0 0.4rem;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2rem, 4vw, 2.9rem);
+      line-height: 1.1;
+    }
+
+    main .lede {
+      margin: 0 0 2.5rem;
+      max-width: 44rem;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+
+    section {
+      scroll-margin-top: 5.5rem;
+      margin-bottom: 3rem;
+    }
+
+    section h2 {
+      margin: 0 0 0.9rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--amber);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.5rem;
+    }
+
+    section h3 {
+      margin: 1.6rem 0 0.5rem;
+      font-size: 1.05rem;
+    }
+
+    p {
+      max-width: 48rem;
+    }
+
+    table {
+      width: 100%;
+      margin: 1rem 0;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    th,
+    td {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+      gap: 0.9rem;
+      margin: 1.2rem 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: step;
+    }
+
+    .steps li {
+      padding: 0.9rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .steps li::before {
+      counter-increment: step;
+      content: "步骤 " counter(step);
+      display: block;
+      margin-bottom: 0.3rem;
+      color: var(--cyan);
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .callout {
+      margin: 1.2rem 0;
+      padding: 0.9rem 1.1rem;
+      border: 1px solid var(--line);
+      border-left-width: 3px;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .callout p {
+      margin: 0.35rem 0;
+    }
+
+    .callout.warn {
+      border-left-color: var(--rose);
+      background: rgba(239, 106, 98, 0.08);
+    }
+
+    .callout.tip {
+      border-left-color: var(--cyan);
+      background: rgba(98, 214, 208, 0.08);
+    }
+
+    .callout strong {
+      color: var(--amber);
+    }
+
+    footer {
+      max-width: 76rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      nav.toc {
+        position: static;
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <span class="brand">Instagram Unfollowers · 使用手册</span>
+    <span class="note">改动合并后需重新复制脚本，已粘贴的脚本不会自动更新</span>
+    <span class="spacer"></span>
+    <a class="action" href="../">复制脚本</a>
+  </div>
+
+  <div class="layout">
+    <nav class="toc">
+      <p>目录</p>
+      <ol>
+        <li><a href="#what">这是什么</a></li>
+        <li><a href="#copy">从哪里复制代码</a></li>
+        <li><a href="#workflow">推荐工作流</a></li>
+        <li><a href="#ui">界面对照</a></li>
+        <li><a href="#pace">自动队列与节奏</a></li>
+        <li><a href="#cooldown">失败与冷却</a></li>
+        <li><a href="#blocked">被限流时怎么办</a></li>
+        <li><a href="#dev">开发与部署</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <h1>使用手册</h1>
+      <p class="lede">
+        这份手册说明本仓库的完整用法：先在本地筛出要保留的账号，再把决定带进浏览器工具批量取关，
+        以及取关被 Instagram 限流时工具会怎么处理。
+      </p>
+
+      <section id="what">
+        <h2>这是什么</h2>
+        <p>项目由两部分组成，各管一段流程。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>组成</th>
+              <th>运行在哪</th>
+              <th>做什么</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>浏览器工具</td>
+              <td>Instagram 页面的开发者控制台</td>
+              <td>扫描关注列表、标记白名单、批量取关</td>
+            </tr>
+            <tr>
+              <td><code>Following Seg.py</code></td>
+              <td>本地 Streamlit</td>
+              <td>离线逐个审阅、打标签，导出要保留的账号清单</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          所有数据只留在你自己的浏览器（<code>localStorage</code>）和本地文件里，没有服务端。
+          本工具与 Instagram 官方无任何关联，使用风险自负。
+        </p>
+      </section>
+
+      <section id="copy">
+        <h2>从哪里复制代码</h2>
+        <div class="callout warn">
+          <p><strong>只用本仓库的地址：</strong> <a href="../">isaaczhang2021.github.io/InsUnfollowingTool/</a></p>
+          <p>
+            上游 <code>davidarroyo1234</code> 的页面不包含自动队列、节奏调试、批量白名单和失败冷却。
+            粘贴上游脚本后侧栏只有 Filter，没有 Progress 和 Pace，那就是复制错地方了。
+          </p>
+        </div>
+        <ol class="steps">
+          <li>在复制页点 <strong>Copy code</strong></li>
+          <li>打开并登录 Instagram 网页版</li>
+          <li>打开控制台：Windows <code>Ctrl + Shift + J</code>，macOS <code>⌘ + ⌥ + I</code></li>
+          <li>粘贴回车，点 <strong>Run Scan</strong></li>
+        </ol>
+        <p>
+          控制台里已经在跑的脚本<strong>不会热更新</strong>。每次合并 PR 并等 Pages 部署完成后，
+          都要回到复制页重新 Copy 一次，再开新一轮队列。
+        </p>
+        <p>Android 可以装 <a href="https://github.com/liriliri/eruda-android/releases/">Eruda 浏览器</a>，用它打开 Instagram 网页版后同样能开控制台。</p>
+      </section>
+
+      <section id="workflow">
+        <h2>推荐工作流</h2>
+        <p>
+          关注量大的时候不建议在工具里逐个勾选。先在本地把「要留下的人」定下来，工具只负责执行剩下的取关。
+        </p>
+        <ol class="steps">
+          <li>在 <code>Following Seg.py</code> 里审阅，导出保留清单 <code>whitelist_users.json</code></li>
+          <li>工具里打开 <strong>Settings → Whitelist → Import</strong> 选中该文件</li>
+          <li>回到 <strong>Non-Whitelisted</strong> 标签，按需要勾选筛选条件（例如只留 Non-Followers）</li>
+          <li>确认列表无误后点 <strong>Unfollow all matching</strong></li>
+        </ol>
+        <p>
+          导入后这些账号会移到 <strong>Whitelisted</strong> 标签，从待取关列表里消失，任何模式下都不会被取关。
+          在扫描结果里多选账号后点 <strong>Whitelist selected</strong> 可以批量补充白名单，
+          在 Whitelisted 标签下则是 <strong>Remove from whitelist</strong>；点头像仍然是单个切换。
+        </p>
+        <div class="callout tip">
+          <p>
+            白名单、每页数量、单次取关上限、失败冷却时长都存在浏览器的 <code>localStorage</code> 里，
+            重新粘贴脚本后依然保留。换浏览器或清缓存前记得先 <strong>Export</strong> 一份白名单备份。
+          </p>
+        </div>
+      </section>
+
+      <section id="ui">
+        <h2>界面对照</h2>
+
+        <h3>扫描阶段（左侧栏）</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>控件</th>
+              <th>作用</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Filter 勾选框</td>
+              <td>按 Non-Followers / Followers / Verified / Private / No Pic 过滤，同时决定自动队列会排进哪些账号</td>
+            </tr>
+            <tr>
+              <td>Per page</td>
+              <td>每页显示数量，下拉给 20 / 30 / 50 / 100 / 120，Settings 里可填 10–200 的任意值</td>
+            </tr>
+            <tr>
+              <td>Max unfollow this run</td>
+              <td>手动取关的单次上限，默认 20，可设 1–100</td>
+            </tr>
+            <tr>
+              <td>Select first N</td>
+              <td>按用户名排序取前 N 个替换当前勾选，N 就是上面那个上限</td>
+            </tr>
+            <tr>
+              <td>Unfollow (N)</td>
+              <td>取关已勾选账号，超出上限的部分会被跳过</td>
+            </tr>
+            <tr>
+              <td>Unfollow all matching</td>
+              <td>把当前筛选下的所有非白名单账号排成队列，一直跑到结束</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          <p>
+            <strong>容易混的一点：</strong>
+            <code>Max unfollow this run</code> 只截断手动的 <strong>Unfollow (N)</strong> 和 <strong>Select first N</strong>。
+            <strong>Unfollow all matching</strong> 不受这个上限约束，几千个账号会全部进队列。
+          </p>
+        </div>
+
+        <h3>取关阶段（Unfollow Queue 侧栏）</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>显示项</th>
+              <th>含义</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Progress</td>
+              <td>已处理数量 / 队列总数</td>
+            </tr>
+            <tr>
+              <td>Pace</td>
+              <td>当前生效的间隔：每个之间多久、每 5 个之后停多久</td>
+            </tr>
+            <tr>
+              <td>Last between / Last after5</td>
+              <td>上一次<strong>实际</strong>等待了多久，用来核对设置有没有吃进去</td>
+            </tr>
+            <tr>
+              <td>Est. left</td>
+              <td>按当前节奏估算的剩余时间</td>
+            </tr>
+            <tr>
+              <td>Status</td>
+              <td>手动暂停显示 Paused，失败冷却显示 Cooling down 加倒计时</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          右侧日志按时间顺序记录每次取关、每段等待和每次冷却。绿色是成功，红色是失败，
+          青色的 <code>Waited 4.2s before next</code> 是实际等待时长。
+        </p>
+
+        <h3>Settings（齿轮）</h3>
+        <p>
+          Settings 里的 <code>time between unfollows</code> 和 <code>after five unfollows</code>
+          只影响<strong>手动</strong> Unfollow；自动队列用自己的自适应节奏。
+          <code>Cooldown after 3 failed unfollows</code> 则两种模式共用。
+        </p>
+      </section>
+
+      <section id="pace">
+        <h2>自动队列与节奏</h2>
+        <p>
+          队列起步是每个之间约 4 秒、每 5 个之后停 1 分钟，每次等待带 1.0–1.2 倍随机抖动，
+          所以日志里的数字总比设定值略大，属正常。连续成功 25 次会把两个间隔都乘 0.9 加速，
+          最快到 1 秒 / 10 秒；任何一次失败会把 between 乘 1.5、after5 乘 2 减速。
+        </p>
+
+        <h3>中途改节奏</h3>
+        <ol class="steps">
+          <li>点 <strong>Pause</strong>，等日志停止刷新</li>
+          <li>改 <strong>Between</strong> 和 <strong>After every 5</strong>（单位秒）</li>
+          <li>点 <strong>Apply pace</strong>，确认 Pace 那一行已经变成新值</li>
+          <li>点 <strong>Resume</strong> 继续</li>
+        </ol>
+        <p>
+          可设范围是 <strong>1–30 秒</strong> 和 <strong>10–600 秒</strong>，超出会被夹回边界，
+          此时 toast 会写明哪一项被 capped。没点 Apply 就 Resume，输入框里的数字不会生效——
+          判断标准是看 Pace 那一行，不是看输入框。
+        </p>
+        <div class="callout">
+          <p>
+            新节奏从<strong>下一个账号</strong>开始生效，不会缩短已经开始的那次 after-5 等待。
+            另外自适应仍在运行，连续成功后间隔会自己慢慢变短。
+          </p>
+        </div>
+      </section>
+
+      <section id="cooldown">
+        <h2>失败与冷却</h2>
+        <p>
+          Instagram 在软限流时会照样返回 HTTP 200，但正文并不是成功。工具只把响应正文里
+          <code>status: "ok"</code> 认作成功，其余一律记为 Failed，并在控制台打出状态码和正文摘要。
+          所以日志里的 Unfollowed 是真的取关成功，不会出现「显示已取关、主页仍是 Following」。
+        </p>
+        <p>连续 <strong>3 次</strong> 失败后队列自动进入冷却：</p>
+        <ul>
+          <li>Status 变成 <code>Cooling down 12:34</code> 并逐秒倒数</li>
+          <li>日志里留下一条冷却记录</li>
+          <li>时间到了自动继续，并清零失败连击，不需要守在电脑前</li>
+          <li>想提前继续就点 <strong>Resume</strong>，会跳过剩余时间</li>
+        </ul>
+        <p>
+          冷却时长默认 30 分钟，可在 Settings 或侧栏的 <strong>Cooldown after 3 failures</strong>
+          设成 5–180 分钟。侧栏改完点 <strong>Apply cooldown</strong>，对<strong>下一次</strong>冷却生效。
+          手动按下的 Pause 不属于冷却，不会自动恢复。
+        </p>
+      </section>
+
+      <section id="blocked">
+        <h2>被限流时怎么办</h2>
+        <div class="callout warn">
+          <p>
+            连续大量 Failed 说明账号已经被限制动作。这时反复 Resume 只会延长限制时间。
+          </p>
+        </div>
+        <ul>
+          <li>当天先停，隔 24 小时以上再试</li>
+          <li>恢复后把冷却设到 60–90 分钟，节奏放到 between 15–30 秒、after5 180–300 秒</li>
+          <li>与其一夜跑完几千个，不如每天限量几十个、分多天完成</li>
+          <li>想确认是不是限流，在控制台 Network 里看 <code>unfollow</code> 请求的响应正文</li>
+        </ul>
+        <p>
+          间隔越短越容易触发风控。工具能做的只是识别失败并退让，无法绕过 Instagram 的限制。
+        </p>
+      </section>
+
+      <section id="dev">
+        <h2>开发与部署</h2>
+        <ul>
+          <li>Node 版本 16.14.0，用 nvm 的话执行 <code>nvm use</code></li>
+          <li><code>npm run build</code> 打包并把脚本嵌进 <code>public/index.html</code></li>
+          <li>推到 <code>master</code> 后 GitHub Actions 会把整个 <code>public/</code> 发布到 Pages，本手册也在其中</li>
+          <li>部署完成后必须重新 Copy 脚本，旧标签页里的版本不会变</li>
+        </ul>
+        <p>
+          手册是纯静态页面，不经过 webpack，直接改 <code>public/guide/index.html</code> 即可。
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    本工具与 Instagram 无任何关联，使用风险自负。基于
+    <a href="https://github.com/davidarroyo1234/InstagramUnfollowers">davidarroyo1234/InstagramUnfollowers</a>
+    修改，遵循 MIT 许可证。
+  </footer>
+</body>
+
+</html>
