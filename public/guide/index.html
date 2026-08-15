@@ -470,7 +470,7 @@
         <p>
           Settings 里的 <code>time between unfollows</code> 和 <code>after five unfollows</code>
           只影响<strong>手动</strong> Unfollow；自动队列用自己的自适应节奏。
-          <code>Cooldown after 3 failed unfollows</code> 则两种模式共用。
+          <code>Cooldown after each failed unfollow</code> 只影响自动队列；手动 Unfollow 不受失败冷却约束。
         </p>
       </section>
 
@@ -509,18 +509,28 @@
           <code>status: "ok"</code> 认作成功，其余一律记为 Failed，并在控制台打出状态码和正文摘要。
           所以日志里的 Unfollowed 是真的取关成功，不会出现「显示已取关、主页仍是 Following」。
         </p>
-        <p>连续 <strong>3 次</strong> 失败后队列自动进入冷却：</p>
+        <p>自动队列里<strong>每一次</strong> Failed 都会立即进入冷却（默认 5 分钟）：</p>
         <ul>
-          <li>Status 变成 <code>Cooling down 12:34</code> 并逐秒倒数</li>
+          <li>Status 变成 <code>Cooling down 4:59</code> 并逐秒倒数</li>
           <li>日志里留下一条冷却记录</li>
-          <li>时间到了自动继续，并清零失败连击，不需要守在电脑前</li>
+          <li>时间到了自动继续，不需要守在电脑前</li>
           <li>想提前继续就点 <strong>Resume</strong>，会跳过剩余时间</li>
         </ul>
         <p>
-          冷却时长默认 30 分钟，可在 Settings 或侧栏的 <strong>Cooldown after 3 failures</strong>
+          冷却时长默认 5 分钟，可在 Settings 或侧栏的 <strong>Cooldown after each failure</strong>
           设成 5–180 分钟。侧栏改完点 <strong>Apply cooldown</strong>，对<strong>下一次</strong>冷却生效。
           手动按下的 Pause 不属于冷却，不会自动恢复。
         </p>
+        <h3>Retry failed（不重新 Scan）</h3>
+        <p>
+          队列跑完且日志里有 Failed 时，会出现 <strong>Retry failed (N)</strong> 按钮。
+          只重试失败账号，无需重新扫描。已成功取关的不会再次进入队列。
+        </p>
+        <div class="callout warn">
+          <p>
+            失败名单只存在当前标签页内存里。刷新页面或关闭标签后需重新 Scan，无法从 Retry 恢复。
+          </p>
+        </div>
       </section>
 
       <section id="blocked">

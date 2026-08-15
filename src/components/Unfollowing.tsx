@@ -22,6 +22,7 @@ interface UnfollowingProps {
   applyUnfollowingPace: (betweenSeconds: number, afterFiveSeconds: number) => void;
   failureCooldownMinutes: number;
   applyFailureCooldown: (minutes: number) => void;
+  retryFailedUnfollowing: () => void;
 }
 
 export const Unfollowing = ({
@@ -31,6 +32,7 @@ export const Unfollowing = ({
   applyUnfollowingPace,
   failureCooldownMinutes,
   applyFailureCooldown,
+  retryFailedUnfollowing,
 }: UnfollowingProps) => {
   const paceBetweenMs = state.status === "unfollowing" ? state.pace.betweenMs : 0;
   const paceAfterFiveMs = state.status === "unfollowing" ? state.pace.afterFiveMs : 0;
@@ -79,6 +81,7 @@ export const Unfollowing = ({
   const remaining = Math.max(0, state.queueTotal - doneCount);
   const estimatedRemaining = formatDuration(estimateRemainingMs(remaining, state.pace));
   const isComplete = doneCount === state.selectedResults.length;
+  const failedCount = state.unfollowLog.filter(entry => !entry.unfollowedSuccessfully).length;
   const lastBetween = [...state.paceLog].reverse().find(entry => entry.kind === "between");
   const lastAfterFive = [...state.paceLog].reverse().find(entry => entry.kind === "after_five");
   const isCoolingDown = state.pauseKind === "cooldown";
@@ -227,7 +230,7 @@ export const Unfollowing = ({
               </button>
             </div>
             <div className="pace-debug">
-              <p className="pace-debug-title">Cooldown after 3 failures</p>
+              <p className="pace-debug-title">Cooldown after each failure</p>
               <p className="pace-debug-range">
                 Range: {MIN_FAILURE_COOLDOWN_MINUTES}-{MAX_FAILURE_COOLDOWN_MINUTES} min
                 {isCoolingDown ? " (applies to the next cooldown)" : ""}
@@ -281,6 +284,20 @@ export const Unfollowing = ({
           <>
             <hr />
             <div className="fs-large p-medium clr-green">All DONE!</div>
+            {failedCount > 0 && (
+              <div className="p-medium">
+                <button
+                  type="button"
+                  className="button-control button-retry-failed"
+                  onClick={retryFailedUnfollowing}
+                >
+                  Retry failed ({failedCount})
+                </button>
+                <p className="retry-failed-hint">
+                  Retries without scanning. Keep this tab open — the failed list is lost if you refresh.
+                </p>
+              </div>
+            )}
             <hr />
           </>
         )}
@@ -289,7 +306,7 @@ export const Unfollowing = ({
             if (item.entry.kind === "cooldown") {
               return (
                 <div className="p-medium pace-log-line clr-red" key={item.key}>
-                  Cooldown after failures: {formatDuration(item.entry.waitedMs)} (at #
+                  Cooldown after failure: {formatDuration(item.entry.waitedMs)} (at #
                   {item.entry.afterCount})
                 </div>
               );

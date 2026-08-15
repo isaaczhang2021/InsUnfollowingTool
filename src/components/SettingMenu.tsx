@@ -163,7 +163,7 @@ export const SettingMenu = ({
               </div>
 
               <div className="row">
-                <label className="minimun-width" htmlFor="failureCooldown">Cooldown after 3 failed unfollows</label>
+                <label className="minimun-width" htmlFor="failureCooldown">Cooldown after each failed unfollow</label>
                 <input
                   type="number"
                   id="failureCooldown"

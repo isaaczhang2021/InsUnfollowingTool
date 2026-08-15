@@ -43,7 +43,8 @@ the **Non-Whitelisted** tab, then press **Unfollow all matching**. The
 - 📄 Configurable page size so you can review 20 or 200 accounts at a time
 - 🛑 Per run unfollow cap, so a large selection is processed in safe batches
 - 🚀 Auto queue: unfollow all matching non-whitelisted accounts with adaptive pacing
-- 🧊 Automatic cooldown and resume after repeated unfollow failures
+- 🧊 Automatic cooldown and resume after each failed unfollow in auto queue (default 5 min)
+- 🔁 Retry failed accounts without rescanning when a run finishes with failures
 - 🧪 Pause to edit unfollow intervals; log shows each wait and after-5 break
 - 🔒 All data stored locally in your browser — no external servers
 
