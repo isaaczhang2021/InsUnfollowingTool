@@ -26,9 +26,8 @@ export const AUTO_PACE_SPEEDUP_EVERY_SUCCESS = 25;
 export const AUTO_PACE_SPEEDUP_FACTOR = 0.9;
 export const AUTO_PACE_FAIL_BETWEEN_FACTOR = 1.5;
 export const AUTO_PACE_FAIL_AFTER_FIVE_FACTOR = 2;
-export const AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS = 3;
-// Instagram keeps refusing for a while once it starts, so the queue waits this long before retrying.
-export const DEFAULT_FAILURE_COOLDOWN_MINUTES = 30;
+// Each failed unfollow in auto-queue cools down this long before continuing (was "after 3 fails").
+export const DEFAULT_FAILURE_COOLDOWN_MINUTES = 5;
 export const MIN_FAILURE_COOLDOWN_MINUTES = 5;
 export const MAX_FAILURE_COOLDOWN_MINUTES = 180;
 // Pausing to edit the pace by hand allows slower values than the adaptive slowdown ever picks,

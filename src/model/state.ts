@@ -32,6 +32,8 @@ type UnfollowingState = {
   readonly cooldownEndsAt?: number;
   readonly queueTotal: number;
   readonly pace: Pace;
+  // Bumped when starting or retrying a queue so the unfollow effect re-runs without leaving "unfollowing".
+  readonly queueRunId: number;
 };
 
 //TODO THIS TYPE OF MULTIPLE STATE NEEDS TO BE SEPARETED IN DIFFERENT FILES ASAP (Global state,unfollowing state, scanning state etc...)

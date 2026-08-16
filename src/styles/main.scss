@@ -1692,6 +1692,27 @@ html .iu button.run-scan:hover {
     line-height: 1.35;
 }
 
+.iu button.button-retry-failed {
+    width: 100%;
+    margin-top: 0.35rem;
+    padding: 0.7rem 0.75rem;
+    border: 1px solid rgba(224, 163, 58, 0.45);
+    border-radius: 7px;
+    background: rgba(224, 163, 58, 0.14);
+    color: var(--amber);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.iu .retry-failed-hint {
+    margin: 0.45rem 0 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.35;
+}
+
 .iu .unfollow-progress {
     margin: 0.55rem 0;
     padding: 0.45rem 0.55rem;

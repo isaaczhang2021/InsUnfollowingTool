@@ -10,7 +10,6 @@ import { DEFAULT_TIME_BETWEEN_SEARCH_CYCLES,
   DEFAULT_TIME_BETWEEN_UNFOLLOWS,
   DEFAULT_TIME_TO_WAIT_AFTER_FIVE_SEARCH_CYCLES,
   DEFAULT_TIME_TO_WAIT_AFTER_FIVE_UNFOLLOWS,
-  AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS,
   DEFAULT_FAILURE_COOLDOWN_MINUTES,
   INSTAGRAM_HOSTNAME } from "./constants/constants";
 import {
@@ -432,6 +431,7 @@ function App() {
       paused: false,
       queueTotal: usersToUnfollow.length,
       pace: createInitialPace(),
+      queueRunId: 1,
     };
     setState(newState);
   };
@@ -461,7 +461,7 @@ function App() {
       + "Whitelisted accounts are never unfollowed.\n"
       + "Pace starts at ~4s between unfollows and 1 min after every 5, then speeds up gradually.\n"
       + "Keep this tab open and do not let the computer sleep.\n"
-      + "After 3 consecutive failures the queue pauses automatically.";
+      + "Each failed unfollow cools down automatically before continuing.";
     if (!confirm(confirmMessage)) {
       return;
     }
@@ -482,8 +482,66 @@ function App() {
       paused: false,
       queueTotal: queue.length,
       pace: createInitialPace(),
+      queueRunId: 1,
     };
     setState(newState);
+  };
+
+  const retryFailedUnfollowing = () => {
+    if (state.status !== "unfollowing") {
+      return;
+    }
+    if (state.unfollowLog.length !== state.queueTotal) {
+      alert("Wait until the current queue finishes before retrying failures.");
+      return;
+    }
+    const seenIds = new Set<string>();
+    const failedUsers = state.unfollowLog
+      .filter(entry => !entry.unfollowedSuccessfully)
+      .map(entry => entry.user)
+      .filter(user => {
+        if (seenIds.has(user.id)) {
+          return false;
+        }
+        seenIds.add(user.id);
+        return true;
+      });
+    if (failedUsers.length === 0) {
+      alert("No failed unfollows to retry.");
+      return;
+    }
+    if (!confirm(
+      `Retry ${failedUsers.length} failed accounts?\n\n`
+      + "Uses the same auto-queue pace and per-failure cooldown.\n"
+      + "No new scan is needed. Keep this tab open.",
+    )) {
+      return;
+    }
+    unfollowingPaused = false;
+    pendingPaceOverride = null;
+    setState(prevState => {
+      if (prevState.status !== "unfollowing") {
+        return prevState;
+      }
+      return {
+        ...prevState,
+        selectedResults: failedUsers,
+        unfollowLog: [],
+        paceLog: [],
+        queueTotal: failedUsers.length,
+        percentage: 0,
+        paused: false,
+        pauseKind: undefined,
+        cooldownEndsAt: undefined,
+        pace: createInitialPace(),
+        queueRunId: prevState.queueRunId + 1,
+        mode: "auto_queue",
+        filter: {
+          showSucceeded: true,
+          showFailed: true,
+        },
+      };
+    });
   };
 
   const setUnfollowingPaused = (paused: boolean) => {
@@ -731,8 +789,7 @@ function App() {
           pace = unfollowedSuccessfully ? onPaceSuccess(pace) : onPaceFailure(pace);
         }
 
-        const shouldCoolDown =
-          isAutoQueue && pace.consecutiveFail >= AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS;
+        const shouldCoolDown = isAutoQueue && !unfollowedSuccessfully;
         const cooldownMs = failureCooldownMinutes * 60 * 1000;
 
         if (shouldCoolDown) {
@@ -763,7 +820,7 @@ function App() {
         if (shouldCoolDown) {
           setToast({
             show: true,
-            text: `Cooling down ${failureCooldownMinutes}m after ${AUTO_PACE_PAUSE_AFTER_CONSECUTIVE_FAILS} failures. Auto-resume when done.`,
+            text: `Cooling down ${failureCooldownMinutes}m after failure. Auto-resume when done.`,
           });
           // Resume ends the cooldown early by clearing the pause flag.
           const cooledMs = await sleepInterruptible(cooldownMs, () => !unfollowingPaused);
@@ -845,7 +902,7 @@ function App() {
     unfollow();
     // Dependency array not entirely legit, but works this way. TODO: Find a way to fix.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.status]);
+  }, [state.status, state.status === "unfollowing" ? state.queueRunId : 0]);
 
   let markup: React.JSX.Element;
   switch (state.status) {
@@ -881,6 +938,7 @@ function App() {
         applyUnfollowingPace={applyUnfollowingPace}
         failureCooldownMinutes={failureCooldown}
         applyFailureCooldown={applyFailureCooldown}
+        retryFailedUnfollowing={retryFailedUnfollowing}
       ></Unfollowing>;
       break;
 
